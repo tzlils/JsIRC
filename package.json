@@ -1,0 +1,23 @@
+{
+  "name": "irchat",
+  "version": "0.0.2",
+  "description": "IRC-Style chat",
+  "main": "index.js",
+  "dependencies": {
+    "yargs": "^13.2.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Terradice/IRChat.git"
+  },
+  "author": "Terradice",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Terradice/IRChat/issues"
+  },
+  "homepage": "https://github.com/Terradice/IRChat#readme"
+}
