@@ -17,6 +17,7 @@ require('dns').resolve(parsedArgs.hostname, (err, res) => {
 
 const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
     let firstLogin = true;
+    console.log('\x1b[2J');
     parsedArgs.ip = client.remoteAddress;
     console.log(`Connected to ${parsedArgs.ip}`);
     client.write(parsedArgs.nickname);
