@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+
 class Object extends EventEmitter{
     constructor() {
         super();
@@ -115,6 +116,4 @@ class Message extends Object {
     }
 }
 
-module.exports.User = User;
-module.exports.Connection = Connection;
-module.exports.Server = Server;
+module.exports = {User, Connection, Server};
