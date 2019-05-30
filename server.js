@@ -1,5 +1,5 @@
-const { Server, User, Connection } = require('./structures.js');
-const net = require('net');
+const { Server, User, Connection } = require('./structures.js'),
+     net = require('net');
 
 function localPrompt(query, callback) {
     process.stdout.write(query)
