@@ -16,6 +16,7 @@ require('dns').resolve(parsedArgs.hostname, (err, res) => {
 });
 
 const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
+    let firstLogin = true;
     parsedArgs.ip = client.remoteAddress;
     console.log(`Connected to ${parsedArgs.ip}`);
     client.write(parsedArgs.nickname);
@@ -26,20 +27,23 @@ const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
     })
 
     client.on('data', (chunk) => {
-        let chat = JSON.parse(chunk.toString());
-        let msgs = chat.channels[0].messages;
-        let lastmsg = msgs[msgs.length-1];
-        if(!lastmsg) return;
-
-        if(lastmsg.author.name != parsedArgs.nickname) {
-            //TODO: Notifications
+        let info = JSON.parse(chunk.toString());
+        let msg = info.channels[0].lastmsg;
+        if(!msg) return;
+        if(firstLogin) {
+            console.log(`Server: ${info.server.name}`);
+            console.log(`Channel: ${info.channels[0].name}`)
+            console.log('==========================================');
+            firstLogin = false;
+            return;
         }
 
-        console.log('\x1Bc');
-        console.log(`Server: ${chat.name}`);
-        console.log(`Channel: ${chat.channels[0].name}`)
-        console.log('==========================================');
-        console.log(msgs.map(r => `${r.author.name}: ${r.content}`).join('\n'))
+        //if(msg.author.name != parsedArgs.nickname) {
+            //TODO: Notifications
+        //}
+        //msgs.map(r => `${r.author.name}: ${r.content}`).join('\n')
+        console.log('\033[2A');
+        console.log(`${msg.author.name}: ${msg.content}`)
     })
 
     process.stdin.on('data', (chunk) => {

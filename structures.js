@@ -67,25 +67,22 @@ class Connection {
     sendData(chat) {
         /*
         * Only send essential information and get rid of circulars
+        * Only send latest message
         */
         let safeObj = {
-            guild: {
+            server: {
                 name: chat.name
             },
             channels: []
         }
         chat.channels.forEach(ch => {
             let safeCh = {
-                messages: [],
+                lastmsg: {
+                    content: (ch.messages[ch.messages.length-1]) ? ch.messages[ch.messages.length-1].content : undefined,
+                    author: (ch.messages[ch.messages.length-1]) ? ch.messages[ch.messages.length-1].author : undefined
+                },
                 name: ch.name
             }
-            ch.messages.forEach(msg => {
-                let safeMsg = {
-                    content: msg.content,
-                    author: msg.author
-                }
-                safeCh.messages.push(safeMsg);
-            });
             safeObj.channels.push(safeCh)
         });
         this.sock.write(JSON.stringify(safeObj))
@@ -93,10 +90,10 @@ class Connection {
 }
 
 class Channel extends Object {
-    constructor(name, guild) {
+    constructor(name, server) {
         super();
         this.name = name;
-        this.server = guild;
+        this.server = server;
         this.messages = [];
     }
 
