@@ -29,6 +29,7 @@ const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
         let chat = JSON.parse(chunk.toString());
         let msgs = chat.channels[0].messages;
         let lastmsg = msgs[msgs.length-1];
+        if(!lastmsg) return;
 
         if(lastmsg.author.name != parsedArgs.nickname) {
             //TODO: Notifications
