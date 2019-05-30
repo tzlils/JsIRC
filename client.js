@@ -42,13 +42,12 @@ const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
             //TODO: Notifications
         //}
         //msgs.map(r => `${r.author.name}: ${r.content}`).join('\n')
-        console.log('\033[2A');
         console.log(`${msg.author.name}: ${msg.content}`)
     })
 
     process.stdin.on('data', (chunk) => {
         client.write(chunk.toString().trim());
-        
+        console.log('\033[2A');
    })
 })
 
