@@ -65,13 +65,30 @@ class Connection {
     }
 
     sendData(chat) {
-        this.sock.write(JSON.stringify(chat, (key, value) => {
-            if(key == 'server' || key == 'channel') { 
-              return value.id;
-            } else {
-              return value;
-            };
-        }))
+        /*
+        * Only send essential information and get rid of circulars
+        */
+        let safeObj = {
+            guild: {
+                name: chat.name
+            },
+            channels: []
+        }
+        chat.channels.forEach(ch => {
+            let safeCh = {
+                messages: [],
+                name: ch.name
+            }
+            ch.messages.forEach(msg => {
+                let safeMsg = {
+                    content: msg.content,
+                    author: msg.author
+                }
+                safeCh.messages.push(safeMsg);
+            });
+            safeObj.channels.push(safeCh)
+        });
+        this.sock.write(JSON.stringify(safeObj))
     }
 }
 
