@@ -26,15 +26,26 @@ const client = net.createConnection(3000, parsedArgs.hostname , (sock) => {
     })
 
     client.on('data', (chunk) => {
-        console.log(chunk.toString().trim());
+        let chat = JSON.parse(chunk.toString());
+        let msgs = chat.channels[0].messages;
+        let lastmsg = msgs[msgs.length-1];
+
+        if(lastmsg.author.name != parsedArgs.nickname) {
+            //TODO: Notifications
+        }
+
+        console.log('\x1Bc');
+        console.log(`Server: ${chat.name}`);
+        console.log(`Channel: ${chat.channels[0].name}`)
+        console.log('==========================================');
+        console.log(msgs.map(r => `${r.author.name}: ${r.content}`).join('\n'))
     })
 
     process.stdin.on('data', (chunk) => {
         client.write(chunk.toString().trim());
+        
    })
 })
-
-
 
 
 

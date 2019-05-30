@@ -48,12 +48,11 @@ net.createServer((sock) => {
     if(sock.destroyed) return;
     console.log(`${con.ip} logged in`)
 
-    sock.write(`Connecting to ${server.chat.name}\n`);
     con.promptLogin((username) => {
         con.user = new User(username);
         con.channel = server.chat.channels[0];
         server.chat.addUser(con.user);
-        con.refreshDisplay(server.chat);
+        con.sendData(server.chat);
 
         sock.on('data', (data) => {
             console.log(`${con.ip} Sent message: ${data.toString().trim()}`);
@@ -62,7 +61,7 @@ net.createServer((sock) => {
 
         con.channel.on('message', (msg) => {
             if(sock.destroyed) return;
-            con.refreshDisplay(server.chat);
+            con.sendData(server.chat);
         })
 
         con.channel.server.once('userJoin', (usr) => {

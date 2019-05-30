@@ -55,7 +55,7 @@ class Connection {
     }
 
     prompt(query, callback) {
-        this.sock.write(query)
+        //this.sock.write(query)
         this.sock.once('data', (d)=>{callback(d)});
     }
 
@@ -64,13 +64,14 @@ class Connection {
         this.sock.destroy();
     }
 
-    refreshDisplay(chat) {
-        this.sock.write('\x1Bc');
-        this.sock.write(`
-Channel: ${chat.channels[0].name}
-==========================================
-${chat.channels[0].messages.map(r => `${r.author.name}: ${r.content}`).join('\n')}
-`);
+    sendData(chat) {
+        this.sock.write(JSON.stringify(chat, (key, value) => {
+            if(key == 'server' || key == 'channel') { 
+              return value.id;
+            } else {
+              return value;
+            };
+        }))
     }
 }
 
