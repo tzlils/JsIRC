@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 module.exports = class Reciever extends EventEmitter {
-    constructor(websocket) {
+    constructor(websocket, debug) {
         super();
         this.codes = {
             '01': 'connectionSuccessful',
@@ -15,6 +15,7 @@ module.exports = class Reciever extends EventEmitter {
             '10': 'dataInfo',
             '11': 'dataDebug'
         }
+        this.debug = debug;
         
         websocket.on('message', (data) => {
             this.parse(data.utf8Data);
@@ -29,7 +30,7 @@ module.exports = class Reciever extends EventEmitter {
         data = data.toString().split(' ');
         let code = data[0];
         let contents = JSON.parse(Buffer.from(data[1], 'base64').toString('ascii'));
-        console.log(this.codes[code], contents);
+        if(this.debug) console.log(this.codes[code], contents);
         
         this.emit(this.codes[code], contents);
     }

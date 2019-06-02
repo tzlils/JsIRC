@@ -5,7 +5,7 @@ const User = require('../structures/User'),
 
 const hostServer = new HostServer(config);
 hostServer.on('connection', (ws) => {
-    hostServer.reciever = new Reciever(ws);
+    hostServer.reciever = new Reciever(ws, true);
 
     const con = hostServer.addConnection(ws);
     hostServer.transmitter.send(ws, {
@@ -41,24 +41,34 @@ hostServer.on('connection', (ws) => {
     })
 
     hostServer.reciever.on('loginSuccessful', (data) => {
-        if(!con.user) return;
         con.channel.send(`${con.user.name} has joined`, hostServer.chat.systemUser);
+        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
+            code: hostServer.transmitter.codes.dataMessage,
+            data: {
+                author: hostServer.chat.systemUser.name,
+                content: `${con.user.name} has joined`
+            }
+        })
     })
     
     hostServer.reciever.on('connectionRefused', (data) => {
-        if(!con.user) return;
-        //console.log(`${con.user.name}(${con.ip}) logged out`);
         con.channel.send(`${con.user.name} has left`, hostServer.chat.systemUser);
+        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
+            code: hostServer.transmitter.codes.dataMessage,
+            data: {
+                author: hostServer.chat.systemUser.name,
+                content: `${con.user.name} has left`
+            }
+        })
     })
 
     hostServer.reciever.on('dataMessage', (data) => {
-        //console.log(`${data.author} Sent message: ${data.content}`);
-        con.channel.send(data.toString().trim(), con.user);
+        con.channel.send(Buffer.from(data.content).toString('ascii').trim(), con.user);
         hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
             code: hostServer.transmitter.codes.dataMessage,
             data: {
                 author: con.user.name,
-                content: data.content
+                content: Buffer.from(data.content).toString('ascii').trim()
             }
         })
     })

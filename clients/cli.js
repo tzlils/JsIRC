@@ -26,9 +26,8 @@ client.on('connectFailed', (err) => {
 })
 
 client.on('connect', (ws) => {
-    const reciever = new Reciever(ws);
+    const reciever = new Reciever(ws, false);
     const transmitter = new Transmitter(ws);
-    //        console.log('\x1b[2J');
     reciever.on('connectionSuccessful', (data) => {
         profile.ip = data.ip;
         console.log(`Connected to ${parsedArgs.hostname}`);
@@ -51,7 +50,7 @@ client.on('connect', (ws) => {
         })
     });
 
-    reciever.on('loginSuccessful', (data) => {
+    reciever.on('loginSuccessful', (data) => {        
         transmitter.send(ws, {
             code: transmitter.codes.loginSuccessful,
             data: {
@@ -59,9 +58,13 @@ client.on('connect', (ws) => {
             }
         })
 
-        //console.log(`Server: ${data.server.name}`);
-        //console.log(`Channel: ${data.channels[0].name}`)
-        //console.log('==========================================');
+        console.log('\x1b[2J');
+        console.log(`Server: ${data.server.name}`);
+        console.log('==========================================');
+    })
+
+    reciever.on('dataMessage', (data) => {
+        console.log(`<${data.author}> ${data.content}`);
     })
 
     process.stdin.on('data', (chunk) => {
@@ -69,7 +72,7 @@ client.on('connect', (ws) => {
             code: transmitter.codes.dataMessage,
             data: {
                 ip: client.localAddress,
-                content: chunk.toString().trim(),
+                content: chunk,
                 author: parsedArgs.nickname
             }
         })
