@@ -29,7 +29,6 @@ module.exports = class HostServer extends EventEmitter {
 
         this.activeConnections = [];
         this.transmitter = new Transmitter();
-        this.ip = this.httpServer.address();
 
         this.chat = new Server(config.server.name);
         this.chat.createChannel("general");
