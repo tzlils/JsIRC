@@ -4,19 +4,39 @@ const User = require('../structures/User'),
     config = require('./config.json');
 
 const hostServer = new HostServer(config);
-hostServer.on('connection', (ws) => {
+function sendMessage(content, author) {
+    try {
+        hostServer.defaultChannel.send(content, author);
+        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
+            code: hostServer.transmitter.codes.dataMessage,
+            data: {
+                author: author.name,
+                content: content
+            }
+        })
+    } catch (e) {}
+}
+
+hostServer.on('connection', (ws, req) => {
     hostServer.reciever = new Reciever(ws, true);
+    for (let i = 0; i < config.banList.length; i++) {
+        if(req.remoteAddress == config.banList[i]) {
+            ws.socket.end();
+            return
+        };
+    }
+    
 
     const con = hostServer.addConnection(ws);
     hostServer.transmitter.send(ws, {
         code: hostServer.transmitter.codes.connectionSuccessful,
         data: {
-            ip: ws.remoteAddress
+            ip: req.remoteAddress
         }
     });
 
     hostServer.reciever.on('connectionSuccessful', (data) => {
-        hostServer.ip = data.ip;
+        con.ip = req.remoteAddress;
         hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginRequest,
             data: {
@@ -26,11 +46,14 @@ hostServer.on('connection', (ws) => {
     })
 
     hostServer.reciever.on('loginRequest', (data) => {
+        con.requests++;
+        if(con.requests >= 5) return;
+        if(data.nickname.trim().length > 20 || !con) return;
         con.user = new User(data.nickname);
-        con.ip = data.ip;
         con.channel = hostServer.chat.channels[0];
         hostServer.chat.addUser(con.user);
 
+        hostServer.ip = data.ip
         hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginSuccessful,
             data: {
@@ -41,35 +64,24 @@ hostServer.on('connection', (ws) => {
     })
 
     hostServer.reciever.on('loginSuccessful', (data) => {
-        con.channel.send(`${con.user.name} has joined`, hostServer.chat.systemUser);
-        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
-            code: hostServer.transmitter.codes.dataMessage,
-            data: {
-                author: hostServer.chat.systemUser.name,
-                content: `${con.user.name} has joined`
-            }
-        })
+        con.requests++;
+        if(con.requests >= 5) return;
+        try {
+            sendMessage(`${con.user.name} has joined`, hostServer.chat.systemUser)
+        } catch (e) {}
     })
     
     hostServer.reciever.on('connectionRefused', (data) => {
-        con.channel.send(`${con.user.name} has left`, hostServer.chat.systemUser);
-        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
-            code: hostServer.transmitter.codes.dataMessage,
-            data: {
-                author: hostServer.chat.systemUser.name,
-                content: `${con.user.name} has left`
-            }
-        })
+        try { sendMessage(`${con.user.name} has left`, hostServer.chat.systemUser)
+        } catch (e) {}
     })
 
     hostServer.reciever.on('dataMessage', (data) => {
-        con.channel.send(Buffer.from(data.content).toString('ascii').trim(), con.user);
-        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
-            code: hostServer.transmitter.codes.dataMessage,
-            data: {
-                author: con.user.name,
-                content: Buffer.from(data.content).toString('ascii').trim()
-            }
-        })
+        con.requests++;
+        if(con.requests >= 5) return;
+
+        data.content = Buffer.from(data.content).toString('ascii').trim()
+        if(data.content.length > 250 || data.content.length < 1) return;
+        sendMessage(data.content, con.user)
     })
 })

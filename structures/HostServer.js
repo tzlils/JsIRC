@@ -19,10 +19,7 @@ module.exports = class HostServer extends EventEmitter {
             autoAcceptConnections: false
         }).on('request', (req) => {
             var connection = req.accept('echo-protocol', req.origin);
-            this.emit('connection', connection);
-            connection.on('message', (msg) => {
-
-            })
+            this.emit('connection', connection, req);
         })
 
 
@@ -32,6 +29,7 @@ module.exports = class HostServer extends EventEmitter {
 
         this.chat = new Server(config.server.name);
         this.chat.createChannel("general");
+        this.defaultChannel = this.chat.channels[0];
     }
 
     isConnected(ip) {
