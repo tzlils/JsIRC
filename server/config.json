@@ -2,5 +2,8 @@
     "server": {
         "name": "Terradice's server",
         "password": ""
-    }
+    },
+    "banList": [
+        "::ffff:47.202.8.227"
+    ]
 }

@@ -19,7 +19,6 @@ let profile = {
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
 
-
 const client = new WebSocketClient();
 client.on('connectFailed', (err) => {
     console.log("Connection failed: " + err);

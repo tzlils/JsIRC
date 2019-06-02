@@ -30,6 +30,7 @@ module.exports = class Reciever extends EventEmitter {
         data = data.toString().split(' ');
         let code = data[0];
         let contents = JSON.parse(Buffer.from(data[1], 'base64').toString('ascii'));
+        if(contents.toString().length + code.toString().length > 200) return;
         if(this.debug) console.log(this.codes[code], contents);
         
         this.emit(this.codes[code], contents);

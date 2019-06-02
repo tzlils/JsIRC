@@ -1,9 +1,14 @@
 module.exports = class Connection {
     constructor(websocket) {
-        this.ip = "";
+        this.ip = websocket.remoteAddress;
         this.websocket = websocket;
         this.channel;
         this.user;
+        this.requests = 0;
+
+        setTimeout(() => {
+            this.requests = 0;
+        }, 1000)
     }
 
     promptLogin(callback) {
@@ -22,13 +27,5 @@ module.exports = class Connection {
         
         //this.sock.end(error.toString());
         //this.sock.destroy();
-    }
-
-    sendData(chat) {
-        /*
-        * Only send essential information and get rid of circulars
-        * Only send latest message
-        */
-        //JSON.stringify(safeObj)
     }
 }
