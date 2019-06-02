@@ -85,4 +85,4 @@ client.on('connect', (ws) => {
     });
 })
 
-client.connect(`wss://${parsedArgs.hostname}:3000/`, 'echo-protocol');
+client.connect(`ws://${parsedArgs.hostname}:3000/`, 'echo-protocol');
