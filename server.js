@@ -1,11 +1,13 @@
-const {User, Reciever, HostServer} = require('./structures.js');
+const User = require('./structures/User'),
+    Reciever = require('./structures/Reciever'),
+    HostServer = require('./structures/HostServer');
 
 const hostServer = new HostServer();
-hostServer.on('connection', (sock) => {
-    hostServer.reciever = new Reciever(sock);
+hostServer.on('connection', (ws) => {
+    hostServer.reciever = new Reciever(ws);
 
-    let con = hostServer.addConnection(sock);
-    hostServer.transmitter.send(sock, {
+    let con = hostServer.addConnection(ws);
+    hostServer.transmitter.send(ws, {
         code: hostServer.transmitter.codes.connectionSuccessful,
         data: {
             ip: hostServer.ip
@@ -13,7 +15,7 @@ hostServer.on('connection', (sock) => {
     });
 
     hostServer.reciever.on('connectionSuccessful', (data) => {
-        hostServer.transmitter.send(sock, {
+        hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginRequest,
             data: {
                 server: hostServer.chat.safe()
@@ -26,7 +28,7 @@ hostServer.on('connection', (sock) => {
         con.channel = hostServer.chat.channels[0];
         hostServer.chat.addUser(con.user);
 
-        hostServer.transmitter.send(sock, {
+        hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginSuccessful,
             data: {
                 server: hostServer.chat.safe()

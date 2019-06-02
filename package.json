@@ -4,6 +4,7 @@
   "description": "IRC-Style chat",
   "main": "index.js",
   "dependencies": {
+    "websocket": "^1.0.28",
     "yargs": "^13.2.4"
   },
   "devDependencies": {},
