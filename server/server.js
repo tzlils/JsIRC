@@ -1,12 +1,13 @@
-const User = require('./structures/User'),
-    Reciever = require('./structures/Reciever'),
-    HostServer = require('./structures/HostServer');
+const User = require('../structures/User'),
+    Reciever = require('../structures/Reciever'),
+    HostServer = require('../structures/HostServer')
+    config = require('./config.json');
 
-const hostServer = new HostServer();
+const hostServer = new HostServer(config);
 hostServer.on('connection', (ws) => {
     hostServer.reciever = new Reciever(ws);
 
-    let con = hostServer.addConnection(ws);
+    const con = hostServer.addConnection(ws);
     hostServer.transmitter.send(ws, {
         code: hostServer.transmitter.codes.connectionSuccessful,
         data: {
@@ -37,10 +38,12 @@ hostServer.on('connection', (ws) => {
     })
 
     hostServer.reciever.on('loginSuccessful', (data) => {
+        if(!con.user) return;
         con.channel.send(`${con.user.name} has joined`, hostServer.chat.systemUser);
     })
     
     hostServer.reciever.on('connectionRefused', (data) => {
+        if(!con.user) return;
         //console.log(`${con.user.name}(${con.ip}) logged out`);
         con.channel.send(`${con.user.name} has left`, hostServer.chat.systemUser);
     })
