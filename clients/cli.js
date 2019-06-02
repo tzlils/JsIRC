@@ -13,6 +13,10 @@ const parsedArgs = {
     verbose: args.v
 }
 
+let profile = {
+    ip: ""
+}
+
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
 
 
@@ -26,13 +30,13 @@ client.on('connect', (ws) => {
     const transmitter = new Transmitter(ws);
     //        console.log('\x1b[2J');
     reciever.on('connectionSuccessful', (data) => {
-        parsedArgs.ip = client.remoteAddress;
+        profile.ip = data.ip;
         console.log(`Connected to ${parsedArgs.hostname}`);
         
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
             data: {
-                ip: ws.socket.address()
+                ip: ws.remoteAddress
             }
         })
     })
@@ -51,7 +55,7 @@ client.on('connect', (ws) => {
         transmitter.send(ws, {
             code: transmitter.codes.loginSuccessful,
             data: {
-                
+                ip: profile.ip
             }
         })
 

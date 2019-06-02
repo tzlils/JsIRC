@@ -1,6 +1,6 @@
 module.exports = class Connection {
     constructor(websocket) {
-        this.ip = websocket.remoteAddress;
+        this.ip = "";
         this.websocket = websocket;
         this.channel;
         this.user;

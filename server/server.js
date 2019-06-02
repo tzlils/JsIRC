@@ -11,11 +11,12 @@ hostServer.on('connection', (ws) => {
     hostServer.transmitter.send(ws, {
         code: hostServer.transmitter.codes.connectionSuccessful,
         data: {
-            ip: hostServer.ip
+            ip: ws.remoteAddress
         }
     });
 
     hostServer.reciever.on('connectionSuccessful', (data) => {
+        hostServer.ip = data.ip;
         hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginRequest,
             data: {
@@ -26,12 +27,14 @@ hostServer.on('connection', (ws) => {
 
     hostServer.reciever.on('loginRequest', (data) => {
         con.user = new User(data.nickname);
+        con.ip = data.ip;
         con.channel = hostServer.chat.channels[0];
         hostServer.chat.addUser(con.user);
 
         hostServer.transmitter.send(ws, {
             code: hostServer.transmitter.codes.loginSuccessful,
             data: {
+                ip: hostServer.ip,
                 server: hostServer.chat.safe()
             }
         })
