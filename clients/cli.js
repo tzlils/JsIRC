@@ -24,9 +24,7 @@ client.on('connectFailed', (err) => {
 client.on('connect', (ws) => {
     const reciever = new Reciever(ws);
     const transmitter = new Transmitter(ws);
-    parsedArgs.ip = ws.remoteAddress;
     //        console.log('\x1b[2J');
-
     reciever.on('connectionSuccessful', (data) => {
         parsedArgs.ip = client.remoteAddress;
         console.log(`Connected to ${parsedArgs.hostname}`);
@@ -34,7 +32,7 @@ client.on('connect', (ws) => {
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
             data: {
-                ip: client.localAddress
+                ip: ws.socket.address()
             }
         })
     })
@@ -80,7 +78,7 @@ client.on('connect', (ws) => {
     });
 
     ws.on('close', () => {
-        console.log(`Connection to ${parsedArgs.ip} abruptly ended`);
+        console.log(`Connection to ${ws.remoteAddress} abruptly ended`);
         process.exit(1);
     });
 })
