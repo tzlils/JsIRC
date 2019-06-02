@@ -6,7 +6,7 @@ const EventEmitter = require('events'),
     http = require('http');
 
 module.exports = class HostServer extends EventEmitter {
-    constructor(server) {
+    constructor(config) {
         super();
         this.httpServer = http.createServer((req, res) => {
             response.writeHead(404);
@@ -31,8 +31,7 @@ module.exports = class HostServer extends EventEmitter {
         this.transmitter = new Transmitter();
         this.ip = this.httpServer.address();
 
-
-        this.chat = new Server(process.argv0);
+        this.chat = new Server(config.server.name);
         this.chat.createChannel("general");
     }
 
@@ -47,8 +46,8 @@ module.exports = class HostServer extends EventEmitter {
     addConnection(websocket) {
         let con = new Connection(websocket);
         if(this.isConnected(con.ip)) {
-            con.throwError(Error("Already connected"));
-            return;
+            //con.throwError(Error("Already connected"));
+            //return;
         };
 
         this.activeConnections.push(con);

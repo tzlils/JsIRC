@@ -1,7 +1,7 @@
 #!/usr/bin/node
-const WebSocketClient = require('websocket').client;
-const Reciever = require('./structures/Reciever');
-const Transmitter = require('./structures/Transmitter');
+const WebSocketClient = require('websocket').client,
+    Reciever = require('../structures/Reciever'),
+    Transmitter = require('../structures/Transmitter');
 
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
@@ -21,16 +21,17 @@ client.on('connectFailed', (err) => {
     console.log("Connection failed: " + err);
 })
 
-client.on('connect', (connection) => {
-    const reciever = new Reciever(connection);
-    const transmitter = new Transmitter(connection);
+client.on('connect', (ws) => {
+    const reciever = new Reciever(ws);
+    const transmitter = new Transmitter(ws);
+    parsedArgs.ip = ws.remoteAddress;
     //        console.log('\x1b[2J');
 
     reciever.on('connectionSuccessful', (data) => {
         parsedArgs.ip = client.remoteAddress;
         console.log(`Connected to ${parsedArgs.hostname}`);
         
-        transmitter.send(connection, {
+        transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
             data: {
                 ip: client.localAddress
@@ -39,7 +40,7 @@ client.on('connect', (connection) => {
     })
 
     reciever.on('loginRequest', (data) => {
-        transmitter.send(connection, {
+        transmitter.send(ws, {
             code: transmitter.codes.loginRequest,
             data: {
                 nickname: parsedArgs.nickname,
@@ -49,13 +50,20 @@ client.on('connect', (connection) => {
     });
 
     reciever.on('loginSuccessful', (data) => {
+        transmitter.send(ws, {
+            code: transmitter.codes.loginSuccessful,
+            data: {
+                
+            }
+        })
+
         //console.log(`Server: ${data.server.name}`);
         //console.log(`Channel: ${data.channels[0].name}`)
         //console.log('==========================================');
     })
 
     process.stdin.on('data', (chunk) => {
-        transmitter.send(connection, {
+        transmitter.send(ws, {
             code: transmitter.codes.dataMessage,
             data: {
                 ip: client.localAddress,
@@ -66,13 +74,13 @@ client.on('connect', (connection) => {
         console.log('\033[2A');
     })
 
-    connection.on('error', (err) => {
+    ws.on('error', (err) => {
         console.log("Connection error: " + err);
         process.exit(1);
     });
 
-    connection.on('close', () => {
-        console.log(`Connection to ${connection.remoteAddress} abruptly ended`);
+    ws.on('close', () => {
+        console.log(`Connection to ${parsedArgs.ip} abruptly ended`);
         process.exit(1);
     });
 })

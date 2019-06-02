@@ -18,8 +18,10 @@ module.exports = class Connection {
     }
 
     throwError(error) {
-        this.sock.end(error.toString());
-        this.sock.destroy();
+        console.log(error);
+        
+        //this.sock.end(error.toString());
+        //this.sock.destroy();
     }
 
     sendData(chat) {
