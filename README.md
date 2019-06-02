@@ -7,6 +7,10 @@ Ambitions:
 - Highly customizeable servers
 - Secure connections
 
+Featurs:
+- Web-Sockets
+- Easy customizeable clients
+
 TODO:
 - SSH Client
 - Custom Client
