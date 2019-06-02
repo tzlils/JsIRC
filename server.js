@@ -1,81 +1,57 @@
-const { Server, User, Connection } = require('./structures.js');
-const net = require('net');
+const {User, Reciever, HostServer} = require('./structures.js');
 
-function localPrompt(query, callback) {
-    process.stdout.write(query)
-    process.stdin.once('data', (chunk) => {
-        callback(chunk.toString().trim());
-    })
-}
+const hostServer = new HostServer();
+hostServer.on('connection', (sock) => {
+    hostServer.reciever = new Reciever(sock);
 
-class HostServer {
-    constructor() {
-        this.activeConnections = [];
-        localPrompt("Server name: ", (data) => {
-            this.chat = new Server(data);
-            this.chat.createChannel("general");
-        })
-    }
-
-    isConnected(ip) {
-        let r = false;
-        this.activeConnections.forEach(con => {
-            if(con.ip == ip) r = true;
-        });
-        return r;
-    }
-
-    addConnection(sock) {
-        let con = new Connection(sock);
-        if(this.isConnected(con.ip)) {
-            //con.throwError(Error("Already connected"));
-            //return;
-        };
-
-        this.activeConnections.push(con);
-        sock.on('end', (data) => {
-            this.activeConnections.splice(this.activeConnections.indexOf(con, 1))
-            this.chat.removeUser(con.user);
-        })
-
-        return con;
-    }
-}
-
-const server = new HostServer();
-net.createServer((sock) => {
-    let con = server.addConnection(sock);
-    if(sock.destroyed) return;
-    console.log(`${con.ip} logged in`)
-
-    con.promptLogin((username) => {
-        con.user = new User(username);
-        con.channel = server.chat.channels[0];
-        server.chat.addUser(con.user);
-        con.sendData(server.chat);
-
-        sock.on('data', (data) => {
-            console.log(`${con.ip} Sent message: ${data.toString().trim()}`);
-            con.channel.send(data.toString().trim(), con.user);
-        })
-
-        con.channel.on('message', (msg) => {
-            if(sock.destroyed) return;
-            con.sendData(server.chat);
-        })
-
-        con.channel.server.once('userJoin', (usr) => {
-            con.channel.send(`${usr.name} has joined`, server.chat.systemUser);
-        })
-
-        con.channel.server.on('userLeave', (usr) => {
-            if(sock.destroyed) return;
-            con.channel.send(`${usr.name} has left`, server.chat.systemUser);
-        })
+    let con = hostServer.addConnection(sock);
+    hostServer.transmitter.send(sock, {
+        code: hostServer.transmitter.codes.connectionSuccessful,
+        data: {
+            ip: hostServer.ip
+        }
     });
 
-    sock.on('end', (data) => {
-        console.log(`${con.ip} logged out`)
+    hostServer.reciever.on('connectionSuccessful', (data) => {
+        hostServer.transmitter.send(sock, {
+            code: hostServer.transmitter.codes.loginRequest,
+            data: {
+                server: hostServer.chat.safe()
+            }
+        })
+    })
+
+    hostServer.reciever.on('loginRequest', (data) => {
+        con.user = new User(data.nickname);
+        con.channel = hostServer.chat.channels[0];
+        hostServer.chat.addUser(con.user);
+
+        hostServer.transmitter.send(sock, {
+            code: hostServer.transmitter.codes.loginSuccessful,
+            data: {
+                server: hostServer.chat.safe()
+            }
+        })
+    })
+
+    hostServer.reciever.on('loginSuccessful', (data) => {
+        con.channel.send(`${con.user.name} has joined`, hostServer.chat.systemUser);
     })
     
-}).listen(3000, process.env.host)
+    hostServer.reciever.on('connectionRefused', (data) => {
+        //console.log(`${con.user.name}(${con.ip}) logged out`);
+        con.channel.send(`${con.user.name} has left`, hostServer.chat.systemUser);
+    })
+
+    hostServer.reciever.on('dataMessage', (data) => {
+        //console.log(`${data.author} Sent message: ${data.content}`);
+        con.channel.send(data.toString().trim(), con.user);
+        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
+            code: hostServer.transmitter.codes.dataMessage,
+            data: {
+                author: con.user.name,
+                content: data.content
+            }
+        })
+    })
+})
