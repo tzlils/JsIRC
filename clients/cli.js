@@ -25,12 +25,10 @@ client.on('connectFailed', (err) => {
 
 client.on('connect', (ws) => {
     const reciever = new Reciever(ws, false, {
-        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24),
-        iv: Buffer.alloc(16, 0)
+        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24)
     });
     const transmitter = new Transmitter({
-        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24),
-        iv: Buffer.alloc(16, 0)
+        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24)
     });
     const messages = [];
     reciever.on('connectionSuccessful', (data) => {

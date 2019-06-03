@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const Cryptography = require('../structures/Cryptography');
 module.exports = class Transmitter {
     constructor(encryption) {
         this.codes = {
@@ -18,10 +18,7 @@ module.exports = class Transmitter {
     }
 
     send(websocket, content) {
-        let cipher = crypto.createCipheriv("aes-192-cbc", this.encryption.hash, this.encryption.iv)
-        let encrypted = cipher.update(JSON.stringify(content.data), 'utf8', 'hex');
-        encrypted += cipher.final('hex')
-
+        let encrypted = Cryptography.encrypt(this.encryption.hash, JSON.stringify(content.data))
         let format = `${content.code} ${encrypted}`;
         websocket.sendUTF(format);
     }

@@ -26,7 +26,6 @@ module.exports = class HostServer extends EventEmitter {
         this.activeConnections = [];
         this.transmitter = new Transmitter({
             hash: crypto.scryptSync(config.server.password, 'salt', 24),
-            iv: Buffer.alloc(16, 0)
         });
 
         this.chat = new Server(config.server.name);
