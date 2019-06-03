@@ -101,7 +101,7 @@ client.on('connect', (ws) => {
             });
         }        
         messages.push(data);                
-        console.log(`<${styling}${data.author}${escapeCodes.Reset}>${data.content}`);
+        console.log(`<${styling}${data.author}${escapeCodes.Reset}> ${data.content}`);
     })
 
     process.stdin.on('data', (chunk) => {
