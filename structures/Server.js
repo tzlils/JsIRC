@@ -28,6 +28,12 @@ module.exports = class Server {
         //this.emit('userLeave', user);
     }
 
+    getUserByName(username) {
+        for (let i = 0; i < this.users.length; i++) {
+            if(this.users[i].name == username) return this.users[i];
+        }
+    }
+
     safe() {
         let safeObj = {
             name: this.name,

@@ -5,5 +5,15 @@
     },
     "banList": [
         
-    ]
+    ],
+    "roles": {
+        "01": {
+            "styling": [ "Underscore", "FgRed" ],
+            "name": "Owner"
+        },
+        "02": {
+            "styling": [ "Blink", "FgGreen" ],
+            "name": "Guest"
+        }
+    }
 }

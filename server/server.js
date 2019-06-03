@@ -5,18 +5,35 @@ const User = require('../structures/User'),
     crypto = require('crypto');
 
 const hostServer = new HostServer(config);
-function sendMessage(content, author) {
+function sendMessage(content, author) {    
     try {
         hostServer.defaultChannel.send(content, author);
         hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
             code: hostServer.transmitter.codes.dataMessage,
             data: {
                 author: author.name,
-                content: content
+                content: content,
+                role: author.role
             }
         })
     } catch (e) {}
 }
+
+process.stdin.on('data', (chunk) => {
+    chunk = chunk.toString().trim();
+    let data = chunk.split(' ');
+    let cmd = data.shift();
+
+    switch (cmd) {
+        case "add-role":
+            let user = hostServer.chat.getUserByName(data[1]);
+            user.role = config.roles[data[0]];            
+            
+            break;
+        default:
+            break;
+    }
+})
 
 hostServer.on('connection', (ws, req) => {
     hostServer.reciever = new Reciever(ws, true, {
