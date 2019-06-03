@@ -4,6 +4,12 @@ const WebSocketClient = require('websocket').client,
     Transmitter = require('../structures/Transmitter'),
     crypto = require('crypto');
 
+const escapeCodes = {
+    "underline": '\033[31m',
+    "red": '\033[4m',
+    "clear": '\033[0m'
+}
+
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
@@ -66,8 +72,14 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('dataMessage', (data) => {
-        messages.push(data);
-        console.log(`<${data.author}> ${data.content}`);
+        let styling = ''
+        if(data.role) {
+            data.role.styling.forEach(code => {
+                styling += escapeCodes[code];
+            });
+        }        
+        messages.push(data);                
+        console.log(`<${styling}${data.author}${escapeCodes.clear}>${data.content}`);
     })
 
     process.stdin.on('data', (chunk) => {
