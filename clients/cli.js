@@ -2,7 +2,7 @@
 const WebSocketClient = require('websocket').client,
     Reciever = require('../structures/Reciever'),
     Transmitter = require('../structures/Transmitter');
-
+    
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
@@ -27,6 +27,7 @@ client.on('connectFailed', (err) => {
 client.on('connect', (ws) => {
     const reciever = new Reciever(ws, false);
     const transmitter = new Transmitter(ws);
+    const messages = [];
     reciever.on('connectionSuccessful', (data) => {
         profile.ip = data.ip;
         console.log(`Connected to ${parsedArgs.hostname}`);
@@ -63,6 +64,7 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('dataMessage', (data) => {
+        messages.push(data);
         console.log(`<${data.author}> ${data.content}`);
     })
 
