@@ -37,7 +37,7 @@ client.on('connect', (ws) => {
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
             data: {
-                ip: ws.remoteAddress
+                
             }
         })
     })
@@ -74,7 +74,6 @@ client.on('connect', (ws) => {
         transmitter.send(ws, {
             code: transmitter.codes.dataMessage,
             data: {
-                ip: client.localAddress,
                 content: chunk,
                 author: parsedArgs.nickname
             }
