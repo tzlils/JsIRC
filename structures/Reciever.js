@@ -34,10 +34,12 @@ module.exports = class Reciever extends EventEmitter {
         if(code != '02') {
             try {
                 data[1] = Cryptography.decrypt(this.decryption.hash, data[1])
-            } catch(e) { throw new Error("Bad password") }
+            } catch(e) { }
         }
-        
-        let contents = JSON.parse(data[1]);
+        let contents;
+        try {
+            contents = JSON.parse(data[1]);
+        } catch (e) { return }
         
         if(contents.toString().length + code.toString().length > 200) return;
         contents.ip = ws.remoteAddress
