@@ -93,7 +93,7 @@ client.on('connect', (ws) => {
         console.log('==========================================');
     })
 
-    reciever.on('dataMessage', (data) => {
+    reciever.on('dataMessage', (data) => {        
         let styling = ''
         if(data.role) {
             data.role.styling.forEach(code => {

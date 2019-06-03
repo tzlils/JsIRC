@@ -27,7 +27,8 @@ process.stdin.on('data', (chunk) => {
     switch (cmd) {
         case "add-role":
             let user = hostServer.chat.getUserByName(data[1]);
-            user.role = config.roles[data[0]];            
+            user.role = config.roles[data[0]];
+                
             
             break;
         default:
