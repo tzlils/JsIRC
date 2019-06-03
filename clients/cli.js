@@ -1,20 +1,19 @@
 #!/usr/bin/node
 const WebSocketClient = require('websocket').client,
     Reciever = require('../structures/Reciever'),
-    Transmitter = require('../structures/Transmitter');
-    
+    Transmitter = require('../structures/Transmitter'),
+    crypto = require('crypto');
+
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
+.option('p', {alias: 'password', describe: 'Server password'})
 .help().argv;
 const parsedArgs = {
     hostname: args._.shift(),
     nickname: args._.join(' '),
-    verbose: args.v
-}
-
-let profile = {
-    ip: ""
+    verbose: args.v,
+    password: args.p
 }
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
@@ -25,11 +24,16 @@ client.on('connectFailed', (err) => {
 })
 
 client.on('connect', (ws) => {
-    const reciever = new Reciever(ws, false);
-    const transmitter = new Transmitter(ws);
+    const reciever = new Reciever(ws, false, {
+        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24),
+        iv: Buffer.alloc(16, 0)
+    });
+    const transmitter = new Transmitter({
+        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24),
+        iv: Buffer.alloc(16, 0)
+    });
     const messages = [];
     reciever.on('connectionSuccessful', (data) => {
-        profile.ip = data.ip;
         console.log(`Connected to ${parsedArgs.hostname}`);
         
         transmitter.send(ws, {
@@ -54,7 +58,7 @@ client.on('connect', (ws) => {
         transmitter.send(ws, {
             code: transmitter.codes.loginSuccessful,
             data: {
-                ip: profile.ip
+
             }
         })
 

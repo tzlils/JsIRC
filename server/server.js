@@ -1,7 +1,8 @@
 const User = require('../structures/User'),
     Reciever = require('../structures/Reciever'),
     HostServer = require('../structures/HostServer')
-    config = require('./config.json');
+    config = require('./config.json'),
+    crypto = require('crypto');
 
 const hostServer = new HostServer(config);
 function sendMessage(content, author) {
@@ -18,7 +19,10 @@ function sendMessage(content, author) {
 }
 
 hostServer.on('connection', (ws, req) => {
-    hostServer.reciever = new Reciever(ws, true);
+    hostServer.reciever = new Reciever(ws, true, {
+        hash: crypto.scryptSync(config.server.password, 'salt', 24),
+        iv: Buffer.alloc(16, 0)
+    });
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
             ws.socket.end();
@@ -31,7 +35,7 @@ hostServer.on('connection', (ws, req) => {
     hostServer.transmitter.send(ws, {
         code: hostServer.transmitter.codes.connectionSuccessful,
         data: {
-            ip: req.remoteAddress
+            
         }
     });
 

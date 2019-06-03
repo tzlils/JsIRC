@@ -3,7 +3,8 @@ const EventEmitter = require('events'),
     Server = require('./Server'),
     Connection = require('./Connection'),
     WebSocketServer = require('websocket').server,
-    http = require('http');
+    http = require('http'),
+    crypto = require('crypto');
 
 module.exports = class HostServer extends EventEmitter {
     constructor(config) {
@@ -21,11 +22,12 @@ module.exports = class HostServer extends EventEmitter {
             var connection = req.accept('echo-protocol', req.origin);
             this.emit('connection', connection, req);
         })
-
-
-
+    
         this.activeConnections = [];
-        this.transmitter = new Transmitter();
+        this.transmitter = new Transmitter({
+            hash: crypto.scryptSync(config.server.password, 'salt', 24),
+            iv: Buffer.alloc(16, 0)
+        });
 
         this.chat = new Server(config.server.name);
         this.chat.createChannel("general");

@@ -1,5 +1,6 @@
+const crypto = require('crypto');
 module.exports = class Transmitter {
-    constructor() {
+    constructor(encryption) {
         this.codes = {
             connectionSuccessful: '01',
             connectionRefused: '02',
@@ -13,17 +14,21 @@ module.exports = class Transmitter {
             dataInfo: '10',
             dataDebug: '11'
         }
+        this.encryption = encryption;
     }
 
     send(websocket, content) {
-        let format = `${content.code} ${Buffer.from(JSON.stringify(content.data)).toString('base64')}`;
+        let cipher = crypto.createCipheriv("aes-192-cbc", this.encryption.hash, this.encryption.iv)
+        let encrypted = cipher.update(JSON.stringify(content.data), 'utf8', 'hex');
+        encrypted += cipher.final('hex')
+
+        let format = `${content.code} ${encrypted}`;
         websocket.sendUTF(format);
     }
 
     sendAllConnections(connections, content) {
         connections.forEach(connection => {
-            let format = `${content.code} ${Buffer.from(JSON.stringify(content.data)).toString('base64')}`;
-            connection.websocket.sendUTF(format);  
+            this.send(connection.websocket, content)
         });
     }
 }
