@@ -1,6 +1,7 @@
-const EventEmitter = require('events');
+const EventEmitter = require('events'),
+    crypto = require('crypto');
 module.exports = class Reciever extends EventEmitter {
-    constructor(websocket, debug) {
+    constructor(websocket, debug, decryption) {
         super();
         this.codes = {
             '01': 'connectionSuccessful',
@@ -15,22 +16,32 @@ module.exports = class Reciever extends EventEmitter {
             '10': 'dataInfo',
             '11': 'dataDebug'
         }
+        this.decryption = decryption;
         this.debug = debug;
         
         websocket.on('message', (data) => {
-            this.parse(data.utf8Data);
+            this.parse(data.utf8Data, websocket);
         });
         
-        websocket.on('close', (data) => {     
-            this.parse(`02 e30=`)
+        websocket.on('close', () => {     
+            this.parse(`02 {}`, websocket)
         })
     }
 
-    parse(data) {
-        data = data.toString().split(' ');
+    parse(data, ws) {
+        data = data.split(' ');
         let code = data[0];
-        let contents = JSON.parse(Buffer.from(data[1], 'base64').toString('ascii'));
+        if(code != '02') {
+            let decipher = crypto.createDecipheriv("aes-192-cbc", this.decryption.hash, this.decryption.iv)
+            let decrypted = decipher.update(data[1], 'hex', 'utf8');
+            decrypted += decipher.final('utf8')
+            data[1] = decrypted;
+        }
+        
+        let contents = JSON.parse(data[1]);
+        
         if(contents.toString().length + code.toString().length > 200) return;
+        contents.ip = ws.remoteAddress
         if(this.debug) console.log(this.codes[code], contents);
         
         this.emit(this.codes[code], contents);
