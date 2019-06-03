@@ -20,8 +20,7 @@ function sendMessage(content, author) {
 
 hostServer.on('connection', (ws, req) => {
     hostServer.reciever = new Reciever(ws, true, {
-        hash: crypto.scryptSync(config.server.password, 'salt', 24),
-        iv: Buffer.alloc(16, 0)
+        hash: crypto.scryptSync(config.server.password, 'salt', 24)
     });
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
