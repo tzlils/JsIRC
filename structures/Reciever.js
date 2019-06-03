@@ -32,10 +32,12 @@ module.exports = class Reciever extends EventEmitter {
         data = data.split(' ');
         let code = data[0];
         if(code != '02') {
-            let decipher = crypto.createDecipheriv("aes-192-cbc", this.decryption.hash, this.decryption.iv)
-            let decrypted = decipher.update(data[1], 'hex', 'utf8');
-            decrypted += decipher.final('utf8')
-            data[1] = decrypted;
+            try {
+                let decipher = crypto.createDecipheriv("aes-192-cbc", this.decryption.hash, this.decryption.iv)
+                let decrypted = decipher.update(data[1], 'hex', 'utf8');
+                decrypted += decipher.final('utf8')
+                data[1] = decrypted;
+            } catch(e) { throw new Error("Bad password") }
         }
         
         let contents = JSON.parse(data[1]);

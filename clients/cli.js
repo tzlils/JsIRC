@@ -13,7 +13,7 @@ const parsedArgs = {
     hostname: args._.shift(),
     nickname: args._.join(' '),
     verbose: args.v,
-    password: args.p
+    password: args.p || ""
 }
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
