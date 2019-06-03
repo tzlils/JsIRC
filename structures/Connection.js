@@ -6,7 +6,7 @@ module.exports = class Connection {
         this.user;
         this.requests = 0;
 
-        setTimeout(() => {
+        this.interval = setInterval(() => {
             this.requests = 0;
         }, 1000)
     }
