@@ -1,18 +1,18 @@
 {
     "server": {
         "name": "Terradice's server",
-        "password": ""
+        "password": "password"
     },
     "banList": [
         
     ],
     "roles": {
         "01": {
-            "styling": [ "Underscore", "FgRed" ],
+            "styling": [ "FgRed" ],
             "name": "Owner"
         },
         "02": {
-            "styling": [ "Blink", "FgGreen" ],
+            "styling": [ "FgGreen" ],
             "name": "Guest"
         }
     }

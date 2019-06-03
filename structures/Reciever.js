@@ -34,7 +34,7 @@ module.exports = class Reciever extends EventEmitter {
         if(code != '02') {
             try {
                 data[1] = Cryptography.decrypt(this.decryption.hash, data[1])
-            } catch(e) { }
+            } catch(e) { throw new Error("Bad Password")}
         }
         let contents;
         try {
