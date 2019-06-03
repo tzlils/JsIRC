@@ -49,6 +49,7 @@ module.exports = class HostServer extends EventEmitter {
 
         this.activeConnections.push(con);
         websocket.on('close', (data) => {
+            clearInterval(con.interval);
             this.activeConnections.splice(this.activeConnections.indexOf(con, 1))
             this.chat.removeUser(con.user);
         })
