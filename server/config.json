@@ -8,11 +8,11 @@
     ],
     "roles": {
         "01": {
-            "styling": [ "FgRed" ],
+            "styling": [ "Fg-Red", "Underline" ],
             "name": "Owner"
         },
         "02": {
-            "styling": [ "FgGreen" ],
+            "styling": [ "Fg-Green" ],
             "name": "Guest"
         }
     }
