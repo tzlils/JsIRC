@@ -13,9 +13,12 @@ Featurs:
 - AES-192-CBC Encryption
 
 TODO:
-- SSH Client
-+ Custom Client
-- GUI
+- ~~Encrypted packets~~
+- ~~Server roles~~
+- ~~Password-Encrypted servers~~
+- ~~Custom Client~~
+- ~~Websockets~~
+- FTP Server
 - Web client
 - (Optional) Native electron application
 - Multiple channels
