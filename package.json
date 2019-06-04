@@ -4,6 +4,7 @@
   "description": "IRC-Style chat",
   "main": "index.js",
   "dependencies": {
+    "ftp-srv": "^4.1.0",
     "websocket": "^1.0.28",
     "yargs": "^13.2.4"
   },
