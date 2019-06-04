@@ -34,11 +34,12 @@ client.on('connectFailed', (err) => {
 
 client.on('connect', (ws) => {
     let serverPass = readlineSync.question("Server password (leave blank for none): ");
+    let userPass;
     const reciever = new Reciever(ws, false, serverPass);
     const transmitter = new Transmitter(serverPass);
     const messages = [];
     reciever.on('connectionSuccessful', (data) => {
-        console.log(`Connected to ${parsedArgs.hostname}`);
+        //console.log(`Connected to ${parsedArgs.hostname}`);
         
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
@@ -49,16 +50,19 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('loginRequest', (data) => {
+        userPass = readlineSync.question("User password (leave blank for none): ");
         transmitter.send(ws, {
             code: transmitter.codes.loginRequest,
             data: {
                 nickname: parsedArgs.nickname,
-                password: readlineSync.question("User password (leave blank for none): ")
+                password: userPass
             }
         })
+        process.stdin.resume()
     });
 
     reciever.on('loginSuccessful', (data) => {
+        console.log('\x1b[2J');
         if(data.password) {
             console.log(`!!IMPORTANT!!\n Your password is ${data.password}, use it at your next login\n`);
         }  
@@ -69,7 +73,6 @@ client.on('connect', (ws) => {
             }
         })
 
-        //console.log('\x1b[2J');
         console.log(`Server: ${data.server.name}`);
         console.log('==========================================');
     })
@@ -81,12 +84,12 @@ client.on('connect', (ws) => {
         console.log(formattedMessage);
     })
 
-    process.stdin.on('data', (chunk) => {
+    process.stdin.on('data', (chunk) => {        
         transmitter.send(ws, {
             code: transmitter.codes.dataMessage,
             data: {
                 content: chunk,
-                author: parsedArgs.nickname
+                author: userPass
             }
         })
         console.log('\033[2A');
