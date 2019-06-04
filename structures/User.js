@@ -1,11 +1,9 @@
 module.exports = class User {
-    constructor(name) {
+    constructor(data) {
         this.id = "";
-        this.createdAt = new Date();
-        this.name = name;
-        this.role = {
-            styling: [],
-            name: ""
-        };
+        this.createdAt = data.timestamp || new Date();
+        this.name = data.name;
+        this.role = data.role || "00";
+        this.password = data.password;
     }
 }

@@ -17,12 +17,14 @@ const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
 .option('p', {alias: 'password', describe: 'Server password'})
+.option('u', {alias: 'userpass', describe: 'User password'})
 .help().argv;
 const parsedArgs = {
     hostname: args._.shift(),
     nickname: args._.join(' '),
     verbose: args.v,
-    password: args.p || ""
+    password: args.p || "",
+    userpass: args.u || ""
 }
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
@@ -52,12 +54,15 @@ client.on('connect', (ws) => {
             code: transmitter.codes.loginRequest,
             data: {
                 nickname: parsedArgs.nickname,
-                password: ''
+                password: parsedArgs.userpass
             }
         })
     });
 
-    reciever.on('loginSuccessful', (data) => {        
+    reciever.on('loginSuccessful', (data) => {
+        if(data.password) {
+            console.log(`!!IMPORTANT!!\n Your password is ${data.password}, use it at your next login\n`);
+        }  
         transmitter.send(ws, {
             code: transmitter.codes.loginSuccessful,
             data: {
@@ -65,7 +70,7 @@ client.on('connect', (ws) => {
             }
         })
 
-        console.log('\x1b[2J');
+        //console.log('\x1b[2J');
         console.log(`Server: ${data.server.name}`);
         console.log('==========================================');
     })

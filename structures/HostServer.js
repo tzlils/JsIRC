@@ -4,41 +4,55 @@ const EventEmitter = require('events'),
     Connection = require('./Connection'),
     WebSocketServer = require('websocket').server,
     http = require('http'),
-    crypto = require('crypto');
+    FtpSrv = require('ftp-srv');
 
 module.exports = class HostServer extends EventEmitter {
-    constructor(config) {
+    constructor(config, storage) {
         super();
         this.config = config;
         this.activeConnections = new Set([]);
         this.transmitter = new Transmitter(config.server.password);
 
-        this.chat = new Server(config.server.name);
+        this.chat = new Server(config, storage);
+        this.chat.restoreFromConfig();
         this.defaultChannel = this.chat.createChannel("general");
     }
 
     start() {
         this.httpServer = http.createServer((req, res) => {
-            //console.log("HTTP Request");
-            
             res.writeHead(404);
             res.end();
-        }).listen(3000, () => {
-            console.log("Server is listening");
         })
-
 
         this.webSocketServer = new WebSocketServer({
             httpServer: this.httpServer,
             autoAcceptConnections: false
-        }).on('request', (req) => {
-            //console.log("WebSocket Request");
-            
+        })
+
+        this.ftpServer = new FtpSrv({
+            greeting: `Joining ${config.server.name}`,
+            pasv_min: 3000,
+            pasv_max: 3000,
+            blacklist: ['RMD', 'RNFR', 'RNTO']
+        });
+
+
+
+        this.ftpServer.on('login', ({connection, username, password}, resolve, reject) => {
+            console.log("New login");
+            console.log(connection, username, password); 
+            resolve();
+        });
+
+        this.webSocketServer.on('request', (req) => {
             var connection = req.accept('echo-protocol', req.origin);
             this.emit('websocketConnection', connection, req);
         })
 
-        
+        //this.ftpServer.listen();
+        this.httpServer.listen(3000, () => {
+            console.log("Server is listening");
+        })
     }
 
     isConnected(ip) {
@@ -60,7 +74,7 @@ module.exports = class HostServer extends EventEmitter {
         websocket.on('close', (data) => {
             clearInterval(con.interval);
             this.activeConnections.delete(con)
-            this.chat.removeUser(con.user);
+            //this.chat.removeUser(con.user);
         })
 
         return con;
