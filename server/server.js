@@ -93,6 +93,7 @@ hostServer.on('websocketConnection', (ws, req) => {
                         
                     }
                 })
+                ws.close();
             }
         } else {
             let pass = Cryptography.generatePassword();

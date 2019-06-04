@@ -1,7 +1,8 @@
 #!/usr/bin/node
 const WebSocketClient = require('websocket').client,
     Reciever = require('../structures/Reciever'),
-    Transmitter = require('../structures/Transmitter');
+    Transmitter = require('../structures/Transmitter'),
+    readlineSync = require('readline-sync');
 
 const escapeCodes = require('./colors.json')
 
@@ -14,18 +15,15 @@ function ANSI(styles, text) {
 };
 
 const args = require('yargs').scriptName("client")
-.version('0.1').usage('$0 <hostname> <nickname> [options]')
+.version('0.1').usage('$0 nickname@hostname [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
-.option('p', {alias: 'password', describe: 'Server password'})
-.option('u', {alias: 'userpass', describe: 'User password'})
 .help().argv;
 const parsedArgs = {
-    hostname: args._.shift(),
-    nickname: args._.join(' '),
-    verbose: args.v,
-    password: args.p || "",
-    userpass: args.u || ""
+    nickname: args._[0].split('@')[0],
+    hostname: args._[0].split('@')[1],
+    verbose: args.v
 }
+
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
 
@@ -35,8 +33,9 @@ client.on('connectFailed', (err) => {
 })
 
 client.on('connect', (ws) => {
-    const reciever = new Reciever(ws, false, parsedArgs.password);
-    const transmitter = new Transmitter(parsedArgs.password);
+    let serverPass = readlineSync.question("Server password (leave blank for none): ");
+    const reciever = new Reciever(ws, false, serverPass);
+    const transmitter = new Transmitter(serverPass);
     const messages = [];
     reciever.on('connectionSuccessful', (data) => {
         console.log(`Connected to ${parsedArgs.hostname}`);
@@ -54,7 +53,7 @@ client.on('connect', (ws) => {
             code: transmitter.codes.loginRequest,
             data: {
                 nickname: parsedArgs.nickname,
-                password: parsedArgs.userpass
+                password: readlineSync.question("User password (leave blank for none): ")
             }
         })
     });
