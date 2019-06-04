@@ -6,6 +6,7 @@
   "dependencies": {
     "bcrypt": "^3.0.6",
     "ftp-srv": "^4.1.0",
+    "readline-sync": "^1.4.9",
     "websocket": "^1.0.28",
     "yargs": "^13.2.4"
   },
