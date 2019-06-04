@@ -1,15 +1,34 @@
 const User = require('./User'),
-    Channel = require('./Channel');
+    Channel = require('./Channel'),
+    Cryptography = require('./Cryptography');
 
 module.exports = class Server {
-    constructor(name) {
-        this.id = "";
+    constructor(config, storage) {
         this.createdAt = new Date();
+        this.config = config;
+        this.storage = storage
 
-        this.name = name;
+        this.name = config.server.name;
         this.channels = new Set([]);
         this.users = new Set([]);
-        this.systemUser = new User("System");
+        this.roles = new Set([]);
+        this.systemUser = new User({
+            name: "System"
+        });
+    }
+
+    restoreFromConfig() {
+        for (const key in this.storage.server.users) {
+            let e = this.storage.server.users[key]
+            let user = new User({
+                name: e.name,
+                timestamp: e.timestamp,
+                role: e.role,
+                password: e.password
+            });
+
+            this.addUser(user);
+        }
     }
 
     createChannel(name) {
@@ -17,6 +36,19 @@ module.exports = class Server {
         this.channels.add(c);
         return c;
     }
+
+    createUser(username, password) {        
+        if(this.getUserByName(username)) return;
+        let user = new User({
+            name: username,
+            password: Cryptography.hash(password)
+        })
+        
+        this.storage.server.users[username] = user;
+        this.addUser(user);
+        return user;
+    }
+    
     
     addUser(user) {
         this.users.add(user);
@@ -27,11 +59,15 @@ module.exports = class Server {
     }
 
     getUserByName(username) {
-        for (let i = 0; i < this.users.length; i++) {
-            if(this.users[i].name == username) return this.users[i];
+        for (const user of this.users) {
+            if(user.name == username) return user;
         }
     }
 
+    compareUserPassword(username, password) {
+        let user = this.getUserByName(username);
+        return Cryptography.compareHash(password, user.password);
+    }
     safe() {
         let safeObj = {
             name: this.name,

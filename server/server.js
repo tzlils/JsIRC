@@ -1,9 +1,11 @@
 const User = require('../structures/User'),
     Reciever = require('../structures/Reciever'),
     HostServer = require('../structures/HostServer')
-    config = require('./config.json');
+    config = require('./config.json'),
+    Cryptography = require('../structures/Cryptography'),
+    storage = require('./storage.json');
 
-const hostServer = new HostServer(config);
+const hostServer = new HostServer(config, storage);
 hostServer.start();
 
 
@@ -15,11 +17,12 @@ function sendMessage(content, author) {
             data: {
                 author: author.name,
                 content: content,
-                role: author.role
+                role: config.roles[author.role]
             }
         })
     } catch (e) {throw e}
 }
+ 
 
 process.stdin.on('data', (chunk) => {
     chunk = chunk.toString().trim();
@@ -29,7 +32,7 @@ process.stdin.on('data', (chunk) => {
     switch (cmd) {
         case "add-role":
             let user = hostServer.chat.getUserByName(data[1]);
-            user.role = config.roles[data[0]];
+            if(user) user.role = config.roles[data[0]];
                 
             
             break;
@@ -70,18 +73,42 @@ hostServer.on('websocketConnection', (ws, req) => {
         con.requests++;
         if(con.requests >= 5) return;
         if(data.nickname.trim().length > 20 || !con) return;
-        con.user = new User(data.nickname);
-        con.channel = hostServer.chat.channels[0];
-        hostServer.chat.addUser(con.user);
-
-        hostServer.ip = data.ip
-        hostServer.transmitter.send(ws, {
-            code: hostServer.transmitter.codes.loginSuccessful,
-            data: {
-                ip: hostServer.ip,
-                server: hostServer.chat.safe()
+        console.log(hostServer.chat.getUserByName(data.nickname));
+        
+        if(hostServer.chat.getUserByName(data.nickname)) {
+            con.user = hostServer.chat.getUserByName(data.nickname);
+            if(Cryptography.compareHash(data.password, con.user.password)) {
+                con.channel = hostServer.chat.defaultChannel;
+                hostServer.chat.addUser(con.user);
+                hostServer.transmitter.send(ws, {
+                    code: hostServer.transmitter.codes.loginSuccessful,
+                    data: {
+                        server: hostServer.chat.safe()
+                    }
+                })
+            } else {
+                hostServer.transmitter.send(ws, {
+                    code: hostServer.transmitter.codes.connectionRefused,
+                    data: {
+                        
+                    }
+                })
             }
-        })
+        } else {
+            let pass = Cryptography.generatePassword();
+            con.user = hostServer.chat.createUser(data.nickname, pass)
+
+            con.channel = hostServer.chat.defaultChannel;
+            hostServer.chat.addUser(con.user);
+    
+            hostServer.transmitter.send(ws, {
+                code: hostServer.transmitter.codes.loginSuccessful,
+                data: {
+                    server: hostServer.chat.safe(),
+                    password: pass
+                }
+            })
+        }
     })
 
     hostServer.reciever.on('loginSuccessful', (data) => {
