@@ -9,26 +9,36 @@ const EventEmitter = require('events'),
 module.exports = class HostServer extends EventEmitter {
     constructor(config) {
         super();
-        this.httpServer = http.createServer((req, res) => {
-            response.writeHead(404);
-            response.end();
-        }).listen(3000, () => {
-            console.log("Server is listening");
-        })
-        this.server = new WebSocketServer({
-            httpServer: this.httpServer,
-            autoAcceptConnections: false
-        }).on('request', (req) => {
-            var connection = req.accept('echo-protocol', req.origin);
-            this.emit('connection', connection, req);
-        })
-    
-        this.activeConnections = [];
+        this.config = config;
+        this.activeConnections = new Set([]);
         this.transmitter = new Transmitter(config.server.password);
 
         this.chat = new Server(config.server.name);
-        this.chat.createChannel("general");
-        this.defaultChannel = this.chat.channels[0];
+        this.defaultChannel = this.chat.createChannel("general");
+    }
+
+    start() {
+        this.httpServer = http.createServer((req, res) => {
+            //console.log("HTTP Request");
+            
+            res.writeHead(404);
+            res.end();
+        }).listen(3000, () => {
+            console.log("Server is listening");
+        })
+
+
+        this.webSocketServer = new WebSocketServer({
+            httpServer: this.httpServer,
+            autoAcceptConnections: false
+        }).on('request', (req) => {
+            //console.log("WebSocket Request");
+            
+            var connection = req.accept('echo-protocol', req.origin);
+            this.emit('websocketConnection', connection, req);
+        })
+
+        
     }
 
     isConnected(ip) {
@@ -46,10 +56,10 @@ module.exports = class HostServer extends EventEmitter {
             //return;
         };
 
-        this.activeConnections.push(con);
+        this.activeConnections.add(con);
         websocket.on('close', (data) => {
             clearInterval(con.interval);
-            this.activeConnections.splice(this.activeConnections.indexOf(con, 1))
+            this.activeConnections.delete(con)
             this.chat.removeUser(con.user);
         })
 

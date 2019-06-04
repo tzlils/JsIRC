@@ -7,25 +7,23 @@ module.exports = class Server {
         this.createdAt = new Date();
 
         this.name = name;
-        this.channels = [];
-        this.users = [];
+        this.channels = new Set([]);
+        this.users = new Set([]);
         this.systemUser = new User("System");
     }
 
     createChannel(name) {
         let c = new Channel(name, this);
-        this.channels.push(c);
+        this.channels.add(c);
         return c;
     }
     
     addUser(user) {
-        this.users.push(user);
-        //this.emit('userJoin', user);
+        this.users.add(user);
     }
 
     removeUser(user) {
-        this.users.splice(this.users.indexOf(user, 1));
-        //this.emit('userLeave', user);
+        this.users.delete(user);
     }
 
     getUserByName(username) {

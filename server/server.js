@@ -4,6 +4,9 @@ const User = require('../structures/User'),
     config = require('./config.json');
 
 const hostServer = new HostServer(config);
+hostServer.start();
+
+
 function sendMessage(content, author) {    
     try {
         hostServer.defaultChannel.send(content, author);
@@ -15,7 +18,7 @@ function sendMessage(content, author) {
                 role: author.role
             }
         })
-    } catch (e) {}
+    } catch (e) {throw e}
 }
 
 process.stdin.on('data', (chunk) => {
@@ -35,7 +38,7 @@ process.stdin.on('data', (chunk) => {
     }
 })
 
-hostServer.on('connection', (ws, req) => {
+hostServer.on('websocketConnection', (ws, req) => {
     hostServer.reciever = new Reciever(ws, true, config.server.password);
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
@@ -102,4 +105,8 @@ hostServer.on('connection', (ws, req) => {
         if(data.content.length > 250 || data.content.length < 1) return;
         sendMessage(data.content, con.user)
     })
+})
+
+hostServer.on('ftpConnection', () => {
+
 })
