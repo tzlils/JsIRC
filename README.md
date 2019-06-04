@@ -2,6 +2,17 @@
 Current:
 Primitive TCP IRC style chat written in node
 
+## Usage:
+Server:
+```javascript
+node server.js
+```
+
+Client:
+```javascript
+node cli.js <username>@<hostname> [options]
+```
+
 Ambitions:
 - Highly customizeable clients
 - Highly customizeable servers
