@@ -1,6 +1,6 @@
 const Cryptography = require('../structures/Cryptography');
 module.exports = class Transmitter {
-    constructor(encryption) {
+    constructor(encryptionKey) {
         this.codes = {
             connectionSuccessful: '01',
             connectionRefused: '02',
@@ -14,11 +14,11 @@ module.exports = class Transmitter {
             dataInfo: '10',
             dataDebug: '11'
         }
-        this.encryption = encryption;
+        this.encryption = encryptionKey;
     }
 
     send(websocket, content) {
-        let encrypted = Cryptography.encrypt(this.encryption.hash, JSON.stringify(content.data))
+        let encrypted = Cryptography.encrypt(this.encryption, JSON.stringify(content.data))
         let format = `${content.code} ${encrypted}`;
         websocket.sendUTF(format);
     }

@@ -1,36 +1,17 @@
 #!/usr/bin/node
 const WebSocketClient = require('websocket').client,
     Reciever = require('../structures/Reciever'),
-    Transmitter = require('../structures/Transmitter'),
-    crypto = require('crypto');
+    Transmitter = require('../structures/Transmitter');
 
-const escapeCodes = {
-	"Reset": "\x1b[0m",
-	"Bright": "\x1b[1m",
-	"Dim": "\x1b[2m",
-	"Underscore": "\x1b[4m",
-	"Blink": "\x1b[5m",
-	"Reverse": "\x1b[7m",
-	"Hidden": "\x1b[8m",
+const escapeCodes = require('./colors.json')
 
-	"FgBlack": "\x1b[30m",
-	"FgRed": "\x1b[31m",
-	"FgGreen": "\x1b[32m",
-	"FgYellow": "\x1b[33m",
-	"FgBlue": "\x1b[34m",
-	"FgMagenta": "\x1b[35m",
-	"FgCyan": "\x1b[36m",
-	"FgWhite": "\x1b[37m",
-
-	"BgBlack": "\x1b[40m",
-	"BgRed": "\x1b[41m",
-	"BgGreen": "\x1b[42m",
-	"BgYellow": "\x1b[43m",
-	"BgBlue": "\x1b[44m",
-	"BgMagenta": "\x1b[45m",
-	"BgCyan": "\x1b[46m",
-	"BgWhite": "\x1b[47m"
-}
+function ANSI(styles, text) {
+    let res = ""
+    styles.forEach(e => {
+        res += '\033['+escapeCodes[e]+ 'm';
+    });
+    return res + text + '\033[0m'
+};
 
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 <hostname> <nickname> [options]')
@@ -52,12 +33,8 @@ client.on('connectFailed', (err) => {
 })
 
 client.on('connect', (ws) => {
-    const reciever = new Reciever(ws, false, {
-        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24)
-    });
-    const transmitter = new Transmitter({
-        hash: crypto.scryptSync(parsedArgs.password, 'salt', 24)
-    });
+    const reciever = new Reciever(ws, false, parsedArgs.password);
+    const transmitter = new Transmitter(parsedArgs.password);
     const messages = [];
     reciever.on('connectionSuccessful', (data) => {
         console.log(`Connected to ${parsedArgs.hostname}`);
@@ -94,14 +71,10 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('dataMessage', (data) => {        
-        let styling = ''
-        if(data.role) {
-            data.role.styling.forEach(code => {
-                styling += escapeCodes[code];
-            });
-        }        
+        let formattedMessage = `<${ANSI(data.role.styling, data.author)}> ${data.content}`
+
         messages.push(data);                
-        console.log(`<${styling}${data.author}${escapeCodes.Reset}> ${data.content}`);
+        console.log(formattedMessage);
     })
 
     process.stdin.on('data', (chunk) => {

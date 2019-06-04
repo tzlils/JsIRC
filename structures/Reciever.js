@@ -1,7 +1,7 @@
 const EventEmitter = require('events'),
     Cryptography = require('../structures/Cryptography');
 module.exports = class Reciever extends EventEmitter {
-    constructor(websocket, debug, decryption) {
+    constructor(websocket, debug, decryptionKey) {
         super();
         this.codes = {
             '01': 'connectionSuccessful',
@@ -16,7 +16,7 @@ module.exports = class Reciever extends EventEmitter {
             '10': 'dataInfo',
             '11': 'dataDebug'
         }
-        this.decryption = decryption;
+        this.decryption = decryptionKey;
         this.debug = debug;
         
         websocket.on('message', (data) => {
@@ -33,7 +33,7 @@ module.exports = class Reciever extends EventEmitter {
         let code = data[0];
         if(code != '02') {
             try {
-                data[1] = Cryptography.decrypt(this.decryption.hash, data[1])
+                data[1] = Cryptography.decrypt(this.decryption, data[1])
             } catch(e) { throw new Error("Bad Password")}
         }
         let contents;
