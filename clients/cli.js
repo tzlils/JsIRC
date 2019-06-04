@@ -70,7 +70,7 @@ client.on('connect', (ws) => {
         console.log('==========================================');
     })
 
-    reciever.on('dataMessage', (data) => {        
+    reciever.on('dataMessage', (data) => { 
         let formattedMessage = `<${ANSI(data.role.styling, data.author)}> ${data.content}`
 
         messages.push(data);                

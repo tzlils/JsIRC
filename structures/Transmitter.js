@@ -25,6 +25,7 @@ module.exports = class Transmitter {
 
     sendAllConnections(connections, content) {
         connections.forEach(connection => {
+            
             this.send(connection.websocket, content)
         });
     }
