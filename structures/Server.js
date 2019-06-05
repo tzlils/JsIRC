@@ -11,6 +11,7 @@ module.exports = class Server {
         this.name = config.server.name;
         this.channels = new Set([]);
         this.users = new Set([]);
+        this.activeUsers = new Set([]);
         this.roles = new Set([]);
         this.systemUser = new User({
             name: "System"
@@ -72,11 +73,22 @@ module.exports = class Server {
         let safeObj = {
             name: this.name,
             channels: [],
-            users: this.users
+            users: [],
+            activeUsers: [],
+            roles: this.roles,
+            createAt: this.createdAt
         }
         this.channels.forEach(ch => {
             safeObj.channels.push(ch.safe());
         });
+
+        this.users.forEach(u => {
+            safeObj.users.push(u.safe());
+        })
+        
+        this.activeUsers.forEach(u => {
+            safeObj.activeUsers.push(u.safe());
+        })
         return safeObj;
     }
 };

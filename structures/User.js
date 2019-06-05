@@ -6,4 +6,13 @@ module.exports = class User {
         this.role = data.role || "00";
         this.password = data.password;
     }
+
+    safe() {
+        let safeObj = {
+            name: this.name,
+            role: this.role,
+            createdAt: this.createdAt
+        }
+        return safeObj
+    }
 }

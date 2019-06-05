@@ -38,9 +38,49 @@ client.on('connect', (ws) => {
     const reciever = new Reciever(ws, false, serverPass);
     const transmitter = new Transmitter(serverPass);
     const messages = [];
+
+    function getData(cb) {
+        transmitter.send(ws, {
+            code: transmitter.codes.requestData,
+            data: {
+                
+            }
+        })
+        reciever.once('dataInfo', (data) => {
+            cb(data);
+        })
+    
+    }
+
+    function parseInput(input) {
+        input = input.toString().trim();
+        let cmd = (input[0] == "/") ? input.split(' ')[0].substr(1) : false;
+    
+        if(!cmd) {
+            transmitter.send(ws, {
+                code: transmitter.codes.dataMessage,
+                data: {
+                    content: input,
+                    author: userPass
+                }
+            })
+            console.log('\033[2A');
+        } else {
+            switch (cmd) {
+                case 'active-users':
+                    getData((data) => {
+                        console.log(`Active users: ${data.activeUsers.map(r => r.name).join('\n')}`);
+                    })
+                    break;
+            
+                default:
+                    console.log("[ERROR] Command not recognized");
+                    break;
+            }
+        }
+    }
+
     reciever.on('connectionSuccessful', (data) => {
-        //console.log(`Connected to ${parsedArgs.hostname}`);
-        
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
             data: {
@@ -84,16 +124,7 @@ client.on('connect', (ws) => {
         console.log(formattedMessage);
     })
 
-    process.stdin.on('data', (chunk) => {        
-        transmitter.send(ws, {
-            code: transmitter.codes.dataMessage,
-            data: {
-                content: chunk,
-                author: userPass
-            }
-        })
-        console.log('\033[2A');
-    })
+    process.stdin.on('data',  parseInput)
 
     ws.on('error', (err) => {
         console.log("Connection error: " + err);
