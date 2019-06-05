@@ -128,15 +128,14 @@ Server.on('websocketConnection', (ws, req) => {
         if(con.requests >= 5) return;
         Server.chat.activeUsers.add(con.user);   
              
-
-        sendMessage(`${con.user.name} has joined`, Server.chat.systemUser)
+        try{sendMessage(`${con.user.name} has joined`, Server.chat.systemUser)}catch(e){}
     })
     
     Server.reciever.on('connectionRefused', (data) => {
         try {
             Server.chat.activeUsers.delete(con.user);
         } catch(e){}
-        sendMessage(`${con.user.name} has left`, Server.chat.systemUser)
+        try{sendMessage(`${con.user.name} has left`, Server.chat.systemUser)}catch(e){}
     })
 
     Server.reciever.on('dataMessage', (data) => {
