@@ -1,7 +1,8 @@
 {
     "server": {
         "name": "Terradice's server",
-        "password": "password"
+        "serverPassword": "",
+        "passwordRequired": false
     },
     "banList": [
         

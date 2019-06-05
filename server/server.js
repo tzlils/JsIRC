@@ -42,7 +42,7 @@ process.stdin.on('data', (chunk) => {
 })
 
 hostServer.on('websocketConnection', (ws, req) => {
-    hostServer.reciever = new Reciever(ws, true, config.server.password);
+    hostServer.reciever = new Reciever(ws, true, config.server.serverPassword);
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
             ws.socket.end();
@@ -73,40 +73,51 @@ hostServer.on('websocketConnection', (ws, req) => {
         con.requests++;
         if(con.requests >= 5) return;
         if(data.nickname.trim().length > 20 || !con) return;
-        console.log(hostServer.chat.getUserByName(data.nickname));
-        
-        if(hostServer.chat.getUserByName(data.nickname)) {
-            con.user = hostServer.chat.getUserByName(data.nickname);
-            if(Cryptography.compareHash(data.password, con.user.password)) {
+        if(config.server.passwordRequired) {
+            if(hostServer.chat.getUserByName(data.nickname)) {
+                con.user = hostServer.chat.getUserByName(data.nickname);
+                if(Cryptography.compareHash(data.password, con.user.password)) {
+                    con.channel = hostServer.chat.defaultChannel;
+                    hostServer.chat.addUser(con.user);
+                    hostServer.transmitter.send(ws, {
+                        code: hostServer.transmitter.codes.loginSuccessful,
+                        data: {
+                            server: hostServer.chat.safe()
+                        }
+                    })
+                } else {
+                    hostServer.transmitter.send(ws, {
+                        code: hostServer.transmitter.codes.connectionRefused,
+                        data: {
+                            
+                        }
+                    })
+                    ws.close();
+                }
+            } else {
+                let pass = Cryptography.generatePassword();
+                con.user = hostServer.chat.createUser(data.nickname, pass)
+    
                 con.channel = hostServer.chat.defaultChannel;
-                hostServer.chat.addUser(con.user);
+        
                 hostServer.transmitter.send(ws, {
                     code: hostServer.transmitter.codes.loginSuccessful,
                     data: {
-                        server: hostServer.chat.safe()
+                        server: hostServer.chat.safe(),
+                        password: pass
                     }
                 })
-            } else {
-                hostServer.transmitter.send(ws, {
-                    code: hostServer.transmitter.codes.connectionRefused,
-                    data: {
-                        
-                    }
-                })
-                ws.close();
             }
         } else {
-            let pass = Cryptography.generatePassword();
-            con.user = hostServer.chat.createUser(data.nickname, pass)
+            let userExists = hostServer.chat.getUserByName(data.nickname);
+            con.user = (userExists) ? userExists : hostServer.chat.createUser(data.nickname);
 
             con.channel = hostServer.chat.defaultChannel;
-            hostServer.chat.addUser(con.user);
     
             hostServer.transmitter.send(ws, {
                 code: hostServer.transmitter.codes.loginSuccessful,
                 data: {
-                    server: hostServer.chat.safe(),
-                    password: pass
+                    server: hostServer.chat.safe()
                 }
             })
         }

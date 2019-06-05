@@ -37,7 +37,7 @@ module.exports = class Server {
         return c;
     }
 
-    createUser(username, password) {        
+    createUser(username, password = "") {        
         if(this.getUserByName(username)) return;
         let user = new User({
             name: username,
