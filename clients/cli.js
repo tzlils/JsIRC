@@ -57,19 +57,29 @@ client.on('connect', (ws) => {
         let cmd = (input[0] == "/") ? input.split(' ')[0].substr(1) : false;
     
         if(!cmd) {
+            if(input.length < 1) {
+                process.stdout.write('\033[2A');
+                process.stdout.write('\033[-2M');
+                process.stdout.write('\033[100;100H\r');
+                process.stdout.write('Enter message: ');
+                
+                return;
+            };
+
             transmitter.send(ws, {
                 code: transmitter.codes.dataMessage,
                 data: {
                     content: input,
                     author: userPass
                 }
-            })
+            })         
             console.log('\033[2A');
+            console.log('\033[2M');   
         } else {
             switch (cmd) {
                 case 'active-users':
                     getData((data) => {
-                        console.log(`Active users: ${data.activeUsers.map(r => r.name).join('\n')}`);
+                        console.log(`Active users: ${data.activeUsers.map(r => r.name).join(',')}`);
                     })
                     break;
             
@@ -120,8 +130,10 @@ client.on('connect', (ws) => {
     reciever.on('dataMessage', (data) => { 
         let formattedMessage = `<${ANSI(data.role.styling, data.author)}> ${data.content}`
 
-        messages.push(data);                
-        console.log(formattedMessage);
+        messages.push(data);
+        process.stdout.write('\033[8H' + formattedMessage + 
+        '\033[7H\033[100;100H\r' + 'Enter message: '
+        );
     })
 
     process.stdin.on('data',  parseInput)
