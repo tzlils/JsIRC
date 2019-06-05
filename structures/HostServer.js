@@ -11,7 +11,7 @@ module.exports = class HostServer extends EventEmitter {
         super();
         this.config = config;
         this.activeConnections = new Set([]);
-        this.transmitter = new Transmitter(config.server.password);
+        this.transmitter = new Transmitter(config.server.serverPassword);
 
         this.chat = new Server(config, storage);
         this.chat.restoreFromConfig();
