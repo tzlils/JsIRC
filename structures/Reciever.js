@@ -14,7 +14,8 @@ module.exports = class Reciever extends EventEmitter {
             '08': 'loginRequest',
             '09': 'dataMessage',
             '10': 'dataInfo',
-            '11': 'dataDebug'
+            '11': 'dataDebug',
+            '12': 'requestData'
         }
         this.decryption = decryptionKey;
         this.debug = debug;

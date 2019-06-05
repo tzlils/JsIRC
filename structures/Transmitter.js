@@ -12,7 +12,8 @@ module.exports = class Transmitter {
             loginRequest: '08',
             dataMessage: '09',
             dataInfo: '10',
-            dataDebug: '11'
+            dataDebug: '11',
+            requestData: '12'
         }
         this.encryption = encryptionKey;
     }

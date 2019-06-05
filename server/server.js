@@ -5,15 +5,15 @@ const User = require('../structures/User'),
     Cryptography = require('../structures/Cryptography'),
     storage = require('./storage.json');
 
-const hostServer = new HostServer(config, storage);
-hostServer.start();
+const Server = new HostServer(config, storage);
+Server.start();
 
 
 function sendMessage(content, author) {    
     try {
-        hostServer.defaultChannel.send(content, author);
-        hostServer.transmitter.sendAllConnections(hostServer.activeConnections, {
-            code: hostServer.transmitter.codes.dataMessage,
+        Server.defaultChannel.send(content, author);
+        Server.transmitter.sendAllConnections(Server.activeConnections, {
+            code: Server.transmitter.codes.dataMessage,
             data: {
                 author: author.name,
                 content: content,
@@ -31,7 +31,7 @@ process.stdin.on('data', (chunk) => {
 
     switch (cmd) {
         case "add-role":
-            let user = hostServer.chat.getUserByName(data[1]);
+            let user = Server.chat.getUserByName(data[1]);
             if(user) user.role = config.roles[data[0]];
                 
             
@@ -41,8 +41,8 @@ process.stdin.on('data', (chunk) => {
     }
 })
 
-hostServer.on('websocketConnection', (ws, req) => {
-    hostServer.reciever = new Reciever(ws, true, config.server.serverPassword);
+Server.on('websocketConnection', (ws, req) => {
+    Server.reciever = new Reciever(ws, true, config.server.serverPassword);
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
             ws.socket.end();
@@ -51,43 +51,43 @@ hostServer.on('websocketConnection', (ws, req) => {
     }
     
 
-    const con = hostServer.addConnection(ws);
-    hostServer.transmitter.send(ws, {
-        code: hostServer.transmitter.codes.connectionSuccessful,
+    const con = Server.addConnection(ws);
+    Server.transmitter.send(ws, {
+        code: Server.transmitter.codes.connectionSuccessful,
         data: {
             
         }
     });
 
-    hostServer.reciever.on('connectionSuccessful', (data) => {
+    Server.reciever.on('connectionSuccessful', (data) => {
         con.ip = req.remoteAddress;
-        hostServer.transmitter.send(ws, {
-            code: hostServer.transmitter.codes.loginRequest,
+        Server.transmitter.send(ws, {
+            code: Server.transmitter.codes.loginRequest,
             data: {
-                server: hostServer.chat.safe()
+                server: Server.chat.safe()
             }
         })
     })
 
-    hostServer.reciever.on('loginRequest', (data) => {
+    Server.reciever.on('loginRequest', (data) => {
         con.requests++;
         if(con.requests >= 5) return;
         if(data.nickname.trim().length > 20 || !con) return;
         if(config.server.passwordRequired) {
-            if(hostServer.chat.getUserByName(data.nickname)) {
-                con.user = hostServer.chat.getUserByName(data.nickname);
+            if(Server.chat.getUserByName(data.nickname)) {
+                con.user = Server.chat.getUserByName(data.nickname);
                 if(Cryptography.compareHash(data.password, con.user.password)) {
-                    con.channel = hostServer.chat.defaultChannel;
-                    hostServer.chat.addUser(con.user);
-                    hostServer.transmitter.send(ws, {
-                        code: hostServer.transmitter.codes.loginSuccessful,
+                    con.channel = Server.chat.defaultChannel;
+                    Server.chat.addUser(con.user);
+                    Server.transmitter.send(ws, {
+                        code: Server.transmitter.codes.loginSuccessful,
                         data: {
-                            server: hostServer.chat.safe()
+                            server: Server.chat.safe()
                         }
                     })
                 } else {
-                    hostServer.transmitter.send(ws, {
-                        code: hostServer.transmitter.codes.connectionRefused,
+                    Server.transmitter.send(ws, {
+                        code: Server.transmitter.codes.connectionRefused,
                         data: {
                             
                         }
@@ -96,47 +96,50 @@ hostServer.on('websocketConnection', (ws, req) => {
                 }
             } else {
                 let pass = Cryptography.generatePassword();
-                con.user = hostServer.chat.createUser(data.nickname, pass)
+                con.user = Server.chat.createUser(data.nickname, pass)
     
-                con.channel = hostServer.chat.defaultChannel;
+                con.channel = Server.chat.defaultChannel;
         
-                hostServer.transmitter.send(ws, {
-                    code: hostServer.transmitter.codes.loginSuccessful,
+                Server.transmitter.send(ws, {
+                    code: Server.transmitter.codes.loginSuccessful,
                     data: {
-                        server: hostServer.chat.safe(),
+                        server: Server.chat.safe(),
                         password: pass
                     }
                 })
             }
         } else {
-            let userExists = hostServer.chat.getUserByName(data.nickname);
-            con.user = (userExists) ? userExists : hostServer.chat.createUser(data.nickname);
+            let userExists = Server.chat.getUserByName(data.nickname);
+            con.user = (userExists) ? userExists : Server.chat.createUser(data.nickname);
 
-            con.channel = hostServer.chat.defaultChannel;
+            con.channel = Server.chat.defaultChannel;
     
-            hostServer.transmitter.send(ws, {
-                code: hostServer.transmitter.codes.loginSuccessful,
+            Server.transmitter.send(ws, {
+                code: Server.transmitter.codes.loginSuccessful,
                 data: {
-                    server: hostServer.chat.safe()
+                    server: Server.chat.safe()
                 }
             })
         }
     })
 
-    hostServer.reciever.on('loginSuccessful', (data) => {
+    Server.reciever.on('loginSuccessful', (data) => {
         con.requests++;
         if(con.requests >= 5) return;
-        try {
-            sendMessage(`${con.user.name} has joined`, hostServer.chat.systemUser)
-        } catch (e) {}
+        Server.chat.activeUsers.add(con.user);   
+             
+
+        sendMessage(`${con.user.name} has joined`, Server.chat.systemUser)
     })
     
-    hostServer.reciever.on('connectionRefused', (data) => {
-        try { sendMessage(`${con.user.name} has left`, hostServer.chat.systemUser)
-        } catch (e) {}
+    Server.reciever.on('connectionRefused', (data) => {
+        try {
+            Server.chat.activeUsers.delete(con.user);
+        } catch(e){}
+        sendMessage(`${con.user.name} has left`, Server.chat.systemUser)
     })
 
-    hostServer.reciever.on('dataMessage', (data) => {
+    Server.reciever.on('dataMessage', (data) => {
         con.requests++;
         if(con.requests >= 5) return;
 
@@ -144,8 +147,15 @@ hostServer.on('websocketConnection', (ws, req) => {
         if(data.content.length > 250 || data.content.length < 1) return;
         sendMessage(data.content, con.user)
     })
+
+    Server.reciever.on('requestData', (data) => {
+        Server.transmitter.send(ws, {
+            code: Server.transmitter.codes.dataInfo,
+            data: Server.chat.safe()
+        })
+    })
 })
 
-hostServer.on('ftpConnection', () => {
+Server.on('ftpConnection', () => {
 
 })
