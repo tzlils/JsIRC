@@ -1,5 +1,6 @@
 const User = require('./User'),
     Channel = require('./Channel'),
+    Role = require('./Role'),
     Cryptography = require('./Cryptography');
 
 module.exports = class Server {
@@ -29,6 +30,16 @@ module.exports = class Server {
             });
 
             this.addUser(user);
+        }
+
+        for (const key in this.config.roles) {
+            let e = this.config.roles[key]
+            let role = new User({
+                name: e.name,
+                styling: e.styling
+            });
+
+            this.roles.add(role);
         }
     }
 
@@ -69,14 +80,14 @@ module.exports = class Server {
         let user = this.getUserByName(username);
         return Cryptography.compareHash(password, user.password);
     }
-    safe() {
+    safe() {        
         let safeObj = {
             name: this.name,
             channels: [],
             users: [],
             activeUsers: [],
             roles: this.roles,
-            createAt: this.createdAt
+            createdAt: this.createdAt
         }
         this.channels.forEach(ch => {
             safeObj.channels.push(ch.safe());

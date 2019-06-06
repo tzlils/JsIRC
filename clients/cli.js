@@ -14,6 +14,11 @@ function ANSI(styles, text) {
     return res + text + '\033[0m'
 };
 
+function dateHR(d) {
+    const hr = `${d.getHours()}:${d.getMinutes()}`
+    return hr;
+}
+
 const args = require('yargs').scriptName("client")
 .version('0.1').usage('$0 nickname@hostname [options]')
 .option('v', {alias: 'verbose', describe: 'Log more information'})
@@ -57,14 +62,8 @@ client.on('connect', (ws) => {
         let cmd = (input[0] == "/") ? input.split(' ')[0].substr(1) : false;
     
         if(!cmd) {
-            if(input.length < 1) {
-                process.stdout.write('\033[2A');
-                process.stdout.write('\033[-2M');
-                process.stdout.write('\033[100;100H\r');
-                process.stdout.write('Enter message: ');
-                
-                return;
-            };
+            console.log('\033[2A');
+            if(input.length < 1) return
 
             transmitter.send(ws, {
                 code: transmitter.codes.dataMessage,
@@ -73,8 +72,6 @@ client.on('connect', (ws) => {
                     author: userPass
                 }
             })         
-            console.log('\033[2A');
-            console.log('\033[2M');   
         } else {
             switch (cmd) {
                 case 'active-users':
@@ -128,12 +125,10 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('dataMessage', (data) => { 
-        let formattedMessage = `<${ANSI(data.role.styling, data.author)}> ${data.content}`
+        let formattedMessage = `<${dateHR(new Date(data.createdAt))}> [${ANSI(data.user.role.styling, data.user.name)}] ${data.content}\n`
 
         messages.push(data);
-        process.stdout.write('\033[8H' + formattedMessage + 
-        '\033[7H\033[100;100H\r' + 'Enter message: '
-        );
+        process.stdout.write(formattedMessage);
     })
 
     process.stdin.on('data',  parseInput)

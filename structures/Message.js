@@ -1,17 +1,18 @@
 module.exports = class Message {
-    constructor(channel, server, author, content) {
+    constructor(channel, server, user, content) {
         this.id = "";
         this.createdAt = new Date();
         this.channel = channel;
         this.server = server;
-        this.author = author;
+        this.user = user;
         this.content = content;
     }
 
     safe() {
         let safeObj = {
             content: this.content,
-            author: this.author
+            user: this.user.safe(),
+            createdAt: this.createdAt
         }
         return safeObj;
     }

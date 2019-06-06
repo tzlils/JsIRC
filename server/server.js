@@ -1,5 +1,4 @@
-const User = require('../structures/User'),
-    Reciever = require('../structures/Reciever'),
+const Reciever = require('../structures/Reciever'),
     HostServer = require('../structures/HostServer')
     config = require('./config.json'),
     Cryptography = require('../structures/Cryptography'),
@@ -9,18 +8,13 @@ const Server = new HostServer(config, storage);
 Server.start();
 
 
-function sendMessage(content, author) {    
-    try {
-        Server.defaultChannel.send(content, author);
-        Server.transmitter.sendAllConnections(Server.activeConnections, {
-            code: Server.transmitter.codes.dataMessage,
-            data: {
-                author: author.name,
-                content: content,
-                role: config.roles[author.role]
-            }
-        })
-    } catch (e) {throw e}
+function sendMessage(content, user) {    
+    let m = Server.defaultChannel.send(content, user);
+    
+    Server.transmitter.sendAllConnections(Server.activeConnections, {
+        code: Server.transmitter.codes.dataMessage,
+        data: m.safe()
+    })
 }
  
 
