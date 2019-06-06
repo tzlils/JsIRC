@@ -1,4 +1,4 @@
-const Cryptography = require('../structures/Cryptography');
+const Cryptography = require('../Utils/Cryptography');
 module.exports = class Transmitter {
     constructor(encryptionKey) {
         this.codes = {

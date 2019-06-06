@@ -1,7 +1,7 @@
 const Reciever = require('../structures/Reciever'),
     HostServer = require('../structures/HostServer')
     config = require('./config.json'),
-    Cryptography = require('../structures/Cryptography'),
+    Cryptography = require('../Utils/Cryptography'),
     storage = require('./storage.json');
 
 const Server = new HostServer(config, storage);
@@ -9,8 +9,7 @@ Server.start();
 
 
 function sendMessage(content, user) {    
-    let m = Server.defaultChannel.send(content, user);
-    
+    let m = Server.defaultChannel.send(content, user);    
     Server.transmitter.sendAllConnections(Server.activeConnections, {
         code: Server.transmitter.codes.dataMessage,
         data: m.safe()

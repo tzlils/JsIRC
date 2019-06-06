@@ -2,40 +2,67 @@
 const WebSocketClient = require('websocket').client,
     Reciever = require('../structures/Reciever'),
     Transmitter = require('../structures/Transmitter'),
+    chat = require('../Utils/Chat'),
+    FTP = require('basic-ftp'),
+    fs = require('fs'),
     readlineSync = require('readline-sync');
 
-const escapeCodes = require('./colors.json')
-
-function ANSI(styles, text) {
-    let res = ""
-    styles.forEach(e => {
-        res += '\033['+escapeCodes[e]+ 'm';
-    });
-    return res + text + '\033[0m'
-};
-
-function dateHR(d) {
-    const hr = `${d.getHours()}:${d.getMinutes()}`
-    return hr;
-}
-
-const args = require('yargs').scriptName("client")
-.version('0.1').usage('$0 nickname@hostname [options]')
-.option('v', {alias: 'verbose', describe: 'Log more information'})
-.help().argv;
+process.argv.shift(); process.argv.shift();
 const parsedArgs = {
-    nickname: args._[0].split('@')[0],
-    hostname: args._[0].split('@')[1],
-    verbose: args.v
+    nickname: process.argv[0].split('@')[0],
+    hostname: process.argv[0].split('@')[1],
+    verbose: process.argv.includes("-v")
 }
-
+chat.verbose = parsedArgs.verbose;
+function parseDirectory(files) {
+    let res = [];
+    files.forEach(file => {
+        res.push(file.name);
+    });
+    return res.join(', ');
+}
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
 
 const client = new WebSocketClient();
-client.on('connectFailed', (err) => {
-    console.log("Connection failed: " + err);
-})
+const ftpClient = new FTP.Client();
+
+function openURL(url) {
+    var start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
+    require('child_process').exec(start + ' ' + url);
+}
+function parseFTP(params) {
+    switch (params[0]) {
+        case 'upload':
+            ftpClient.upload(fs.createReadStream(params[1]), params[2]).then(res => {
+                chat.debug(JSON.stringify(res));
+                chat.ftp(`${params[1]} Uploaded to ${params[2]}`)
+            }).catch(res => {
+                chat.error(res);
+            })
+            break;
+        case 'download':
+            ftpClient.download(fs.createWriteStream('localFTP/'+params[2]), params[1]).then(res => {
+                chat.debug(JSON.stringify(res));
+                chat.ftp(`${params[1]} Downloaded to ${params[2]}`)
+            }).catch(res => {
+                chat.error(res);
+            })
+            break;
+
+        case 'list':
+            ftpClient.list().then(res => {
+                chat.debug(JSON.stringify(res));
+                chat.ftp(parseDirectory(res));
+            })
+
+        case 'open':
+            openURL(`ftp://${parsedArgs.hostname}:3001/${params[1]}`);
+            chat.client("Opening in browser..");
+        default:
+            break;
+    }
+}
 
 client.on('connect', (ws) => {
     let serverPass = readlineSync.question("Server password (leave blank for none): ");
@@ -57,12 +84,16 @@ client.on('connect', (ws) => {
     
     }
 
+
+
     function parseInput(input) {
         input = input.toString().trim();
         let cmd = (input[0] == "/") ? input.split(' ')[0].substr(1) : false;
-    
+        let params = (cmd) ? input.split(cmd)[1].split(' ') : [];      
+        params.shift()          
+        console.log('\033[2A');
+
         if(!cmd) {
-            console.log('\033[2A');
             if(input.length < 1) return
 
             transmitter.send(ws, {
@@ -76,12 +107,15 @@ client.on('connect', (ws) => {
             switch (cmd) {
                 case 'active-users':
                     getData((data) => {
-                        console.log(`Active users: ${data.activeUsers.map(r => r.name).join(',')}`);
+                        chat.client(`Active users: ${data.activeUsers.map(r => r.name).join(',')}`);
                     })
+                    break;
+                case 'ftp':
+                    parseFTP(params);
                     break;
             
                 default:
-                    console.log("[ERROR] Command not recognized");
+                    chat.error("Command not recognized");
                     break;
             }
         }
@@ -97,7 +131,18 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('loginRequest', (data) => {
-        userPass = readlineSync.question("User password (leave blank for none): ");
+        userPass = readlineSync.question("User password (leave blank for none): ") || " ";
+        ftpClient.access({
+            host: parsedArgs.hostname,
+            user: parsedArgs.nickname,
+            password: userPass,
+            port: 3001
+        }).then(res => {
+            chat.ftp("Connected to FTP Server")
+            chat.debug(res.message);
+            
+        })
+
         transmitter.send(ws, {
             code: transmitter.codes.loginRequest,
             data: {
@@ -125,21 +170,24 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('dataMessage', (data) => { 
-        let formattedMessage = `<${dateHR(new Date(data.createdAt))}> [${ANSI(data.user.role.styling, data.user.name)}] ${data.content}\n`
-
         messages.push(data);
-        process.stdout.write(formattedMessage);
+        chat.message({
+            timestamp: data.createdAt,
+            styling: data.user.role.styling,
+            displayname: data.user.name,
+            content: data.content
+        });
     })
 
     process.stdin.on('data',  parseInput)
 
     ws.on('error', (err) => {
-        console.log("Connection error: " + err);
+        chat.error("Connection error: " + err);
         process.exit(1);
     });
 
     ws.on('close', () => {
-        console.log(`Connection to ${ws.remoteAddress} abruptly ended`);
+        chat.error(`Connection to ${ws.remoteAddress} abruptly ended`);
         process.exit(1);
     });
 })

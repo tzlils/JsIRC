@@ -1,5 +1,5 @@
 const EventEmitter = require('events'),
-    Cryptography = require('../structures/Cryptography');
+    Cryptography = require('../Utils/Cryptography');
 module.exports = class Reciever extends EventEmitter {
     constructor(websocket, debug, decryptionKey) {
         super();
