@@ -1,7 +1,7 @@
 const User = require('./User'),
     Channel = require('./Channel'),
     Role = require('./Role'),
-    Cryptography = require('./Cryptography');
+    Cryptography = require('../Utils/Cryptography');
 
 module.exports = class Server {
     constructor(config, storage) {

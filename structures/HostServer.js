@@ -4,7 +4,8 @@ const EventEmitter = require('events'),
     Connection = require('./Connection'),
     WebSocketServer = require('websocket').server,
     http = require('http'),
-    FtpSrv = require('ftp-srv');
+    FtpSrv = require('ftp-srv'),
+    buyan = require('bunyan');
 
 module.exports = class HostServer extends EventEmitter {
     constructor(config, storage) {
@@ -30,26 +31,46 @@ module.exports = class HostServer extends EventEmitter {
         })
 
         this.ftpServer = new FtpSrv({
-            greeting: `Joining ${config.server.name}`,
-            pasv_min: 3000,
-            pasv_max: 3000,
-            blacklist: ['RMD', 'RNFR', 'RNTO']
-        });
+            log: buyan.createLogger({name: 'ftp-srv'}),
+            url: 'ftp://0.0.0.0:3001',
+            pasv_min: 3002,
+            pasv_max: 3002,
+            pasv_url: '0.0.0.0',
+            anonymous: false,
+            file_format: 'ls',
+            blacklist: ['RMD', 'RNFR', 'RNTO'],
+            whitelist: [ ],
+            greeting: null,
+            tls: false,
+            timeout: 0
+          });
 
 
 
         this.ftpServer.on('login', ({connection, username, password}, resolve, reject) => {
-            console.log("New login");
-            console.log(connection, username, password); 
-            resolve();
-        });
+            resolve({
+                root: this.config.server.ftpDir
+            });
+            return;
+            if(this.chat.getUserByName(username)) {
+                if(this.chat.compareUserPassword(username, password)) {
+                    resolve({
+                        root: this.config.server.ftpDir
+                    });
+                } else {
+                    reject();
+                }
+            } else {
+                reject();
+            }
 
+        });
         this.webSocketServer.on('request', (req) => {
             var connection = req.accept('echo-protocol', req.origin);
             this.emit('websocketConnection', connection, req);
         })
 
-        //this.ftpServer.listen();
+        this.ftpServer.listen(3001);
         this.httpServer.listen(3000, () => {
             console.log("Server is listening");
         })

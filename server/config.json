@@ -2,7 +2,9 @@
     "server": {
         "name": "Terradice's server",
         "serverPassword": "",
-        "passwordRequired": false
+        "passwordRequired": false,
+        "ftp": true,
+        "ftpDir": "FTPFolder"
     },
     "banList": [
         
