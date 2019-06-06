@@ -8,15 +8,15 @@
         
     ],
     "roles": {
-        "00": {
+        "user": {
             "styling": [ ],
             "name": "User"
         },
-        "01": {
+        "owner": {
             "styling": [ "Fg-Red", "Underline" ],
             "name": "Owner"
         },
-        "02": {
+        "guest": {
             "styling": [ "Fg-Green" ],
             "name": "Guest"
         }
