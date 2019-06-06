@@ -22,6 +22,7 @@ Featurs:
 - Web-Sockets
 - Easy customizeable clients
 - AES-192-CBC Encryption
+- FTP Server
 
 TODO:
 - ~~Encrypted packets~~
@@ -29,7 +30,7 @@ TODO:
 - ~~Password-Encrypted servers~~
 - ~~Custom Client~~
 - ~~Websockets~~
-- FTP Server
+- ~~FTP Server~~
 - Web client
 - (Optional) Native electron application
 - Multiple channels
