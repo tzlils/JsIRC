@@ -55,6 +55,7 @@ function parseFTP(params) {
                 chat.debug(JSON.stringify(res));
                 chat.ftp(parseDirectory(res));
             })
+            break;
 
         case 'open':
             openURL(`ftp://${parsedArgs.hostname}:3001/${params[1]}`);
