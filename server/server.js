@@ -35,7 +35,7 @@ process.stdin.on('data', (chunk) => {
 })
 
 Server.on('websocketConnection', (ws, req) => {
-    Server.reciever = new Reciever(ws, true, config.server.serverPassword);
+    Server.reciever = new Reciever(ws, config.server.serverPassword);
     for (let i = 0; i < config.banList.length; i++) {
         if(req.remoteAddress == config.banList[i]) {
             ws.socket.end();
@@ -51,6 +51,11 @@ Server.on('websocketConnection', (ws, req) => {
             
         }
     });
+
+    Server.reciever.on('debug', (code, data) => {
+        process.stdout.write(code);
+        console.log(data);
+    })
 
     Server.reciever.on('connectionSuccessful', (data) => {
         con.ip = req.remoteAddress;
@@ -137,7 +142,7 @@ Server.on('websocketConnection', (ws, req) => {
 
         data.content = Buffer.from(data.content).toString('ascii').trim()
         if(data.content.length > 250 || data.content.length < 1) return;
-        sendMessage(data.content, con.user)
+        sendMessage(String.raw`${data.content}`, con.user)
     })
 
     Server.reciever.on('requestData', (data) => {

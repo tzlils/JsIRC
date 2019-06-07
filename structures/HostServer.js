@@ -15,8 +15,9 @@ module.exports = class HostServer extends EventEmitter {
         this.transmitter = new Transmitter(config.server.serverPassword);
 
         this.chat = new Server(config, storage);
-        this.chat.restoreFromConfig();
-        this.defaultChannel = this.chat.createChannel("general");
+        this.chat.restoreFromConfig(() => {
+            this.defaultChannel = this.chat.channels.values().next().value;            
+        });        
     }
 
     start() {
@@ -48,6 +49,13 @@ module.exports = class HostServer extends EventEmitter {
 
 
         this.ftpServer.on('login', ({connection, username, password}, resolve, reject) => {
+            if(config.server.serverPassword == "") {
+                console.log("Server password not set, refusing all connections");
+                reject("FTP Server disabled: Server password not set");
+                return;
+            }
+
+
             resolve({
                 root: this.config.server.ftpDir
             });

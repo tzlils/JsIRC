@@ -19,7 +19,7 @@ module.exports = class Server {
         });
     }
 
-    restoreFromConfig() {
+    restoreFromConfig(cb) {
         for (const key in this.storage.server.users) {
             let e = this.storage.server.users[key]
             let user = new User({
@@ -34,17 +34,31 @@ module.exports = class Server {
 
         for (const key in this.config.roles) {
             let e = this.config.roles[key]
-            let role = new User({
+            let role = new Role({
                 name: e.name,
                 styling: e.styling
             });
 
             this.roles.add(role);
         }
+
+        
+        for (const key in this.config.channels) {
+            let e = this.config.channels[key]
+            let channel = new Channel({
+                name: e.name
+            });
+
+            this.channels.add(channel);
+        }
+        cb();
     }
 
+    /**
+    * @deprecated
+    */
     createChannel(name) {
-        let c = new Channel(name, this);
+        let c = new Channel(name);
         this.channels.add(c);
         return c;
     }
@@ -87,8 +101,11 @@ module.exports = class Server {
             users: [],
             activeUsers: [],
             roles: this.roles,
-            createdAt: this.createdAt
+            createdAt: this.createdAt,
+            defaultChannel: this.defaultChannel
         }
+        console.log(safeObj);
+        
         this.channels.forEach(ch => {
             safeObj.channels.push(ch.safe());
         });
