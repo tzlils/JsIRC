@@ -1,7 +1,7 @@
 {
     "server": {
         "name": "Terradice's server",
-        "serverPassword": "",
+        "serverPassword": "password",
         "passwordRequired": false,
         "ftp": true,
         "ftpDir": "FTPFolder"
@@ -21,6 +21,14 @@
         "guest": {
             "styling": [ "Fg-Green" ],
             "name": "Guest"
+        }
+    },
+    "channels": {
+        "general": {
+            "name": "general"
+        },
+        "general2": {
+            "name": "general2"
         }
     }
 }

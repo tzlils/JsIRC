@@ -1,7 +1,7 @@
 const EventEmitter = require('events'),
     Cryptography = require('../Utils/Cryptography');
 module.exports = class Reciever extends EventEmitter {
-    constructor(websocket, debug, decryptionKey) {
+    constructor(websocket, decryptionKey) {
         super();
         this.codes = {
             '01': 'connectionSuccessful',
@@ -18,7 +18,6 @@ module.exports = class Reciever extends EventEmitter {
             '12': 'requestData'
         }
         this.decryption = decryptionKey;
-        this.debug = debug;
         
         websocket.on('message', (data) => {
             this.parse(data.utf8Data, websocket);
@@ -44,7 +43,7 @@ module.exports = class Reciever extends EventEmitter {
         
         if(contents.toString().length + code.toString().length > 200) return;
         contents.ip = ws.remoteAddress
-        if(this.debug) console.log(this.codes[code], contents);
+        this.emit('debug', this.codes[code], contents);
         
         this.emit(this.codes[code], contents);
     }

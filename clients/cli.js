@@ -54,6 +54,9 @@ function parseFTP(params) {
             ftpClient.list().then(res => {
                 chat.debug(JSON.stringify(res));
                 chat.ftp(parseDirectory(res));
+            }).catch(res => {
+                chat.debug(res);
+                chat.error("Could not communicate with FTP server");
             })
             break;
 
@@ -68,7 +71,7 @@ function parseFTP(params) {
 client.on('connect', (ws) => {
     let serverPass = readlineSync.question("Server password (leave blank for none): ");
     let userPass;
-    const reciever = new Reciever(ws, false, serverPass);
+    const reciever = new Reciever(ws, serverPass);
     const transmitter = new Transmitter(serverPass);
     const messages = [];
 
@@ -84,8 +87,6 @@ client.on('connect', (ws) => {
         })
     
     }
-
-
 
     function parseInput(input) {
         input = input.toString().trim();
@@ -122,6 +123,10 @@ client.on('connect', (ws) => {
         }
     }
 
+    reciever.on('debug', (code, data) => {
+        if(parsedArgs.verbose) chat.debug(`${code}: ${JSON.stringify(data)}`);
+    })
+
     reciever.on('connectionSuccessful', (data) => {
         transmitter.send(ws, {
             code: transmitter.codes.connectionSuccessful,
@@ -141,7 +146,9 @@ client.on('connect', (ws) => {
         }).then(res => {
             chat.ftp("Connected to FTP Server")
             chat.debug(res.message);
-            
+        }).catch(res => {
+            chat.error("Could not connect to FTP Server");
+            chat.debug(res);
         })
 
         transmitter.send(ws, {
@@ -168,6 +175,15 @@ client.on('connect', (ws) => {
 
         console.log(`Server: ${data.server.name}`);
         console.log('==========================================');
+        chat.debug(JSON.stringify(data));
+        data.server.channels[0].messages.forEach(data => {
+            chat.message({
+                timestamp: data.createdAt,
+                styling: data.user.role.styling,
+                displayname: data.user.name,
+                content: data.content
+            });
+        });
     })
 
     reciever.on('dataMessage', (data) => { 
