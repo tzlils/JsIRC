@@ -104,7 +104,6 @@ module.exports = class Server {
             createdAt: this.createdAt,
             defaultChannel: this.defaultChannel
         }
-        console.log(safeObj);
         
         this.channels.forEach(ch => {
             safeObj.channels.push(ch.safe());

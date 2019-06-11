@@ -17,7 +17,7 @@ module.exports = class HostServer extends EventEmitter {
         this.chat = new Server(config, storage);
         this.chat.restoreFromConfig(() => {
             this.defaultChannel = this.chat.channels.values().next().value;            
-        });        
+        });
     }
 
     start() {
@@ -32,7 +32,10 @@ module.exports = class HostServer extends EventEmitter {
         })
 
         this.ftpServer = new FtpSrv({
-            log: buyan.createLogger({name: 'ftp-srv'}),
+            log: buyan.createLogger({
+                name: 'ftp-srv',
+                level: 'error'
+            }),
             url: 'ftp://0.0.0.0:3001',
             pasv_min: 3002,
             pasv_max: 3002,
@@ -49,17 +52,19 @@ module.exports = class HostServer extends EventEmitter {
 
 
         this.ftpServer.on('login', ({connection, username, password}, resolve, reject) => {
-            if(config.server.serverPassword == "") {
+            if(this.config.server.serverPassword == "") {
                 console.log("Server password not set, refusing all connections");
                 reject("FTP Server disabled: Server password not set");
                 return;
             }
 
+            if(!this.config.server.passwordRequired) {
+                resolve({
+                    root: this.config.server.ftpDir
+                });
+                return; 
+            }
 
-            resolve({
-                root: this.config.server.ftpDir
-            });
-            return;
             if(this.chat.getUserByName(username)) {
                 if(this.chat.compareUserPassword(username, password)) {
                     resolve({
@@ -73,12 +78,13 @@ module.exports = class HostServer extends EventEmitter {
             }
 
         });
+
         this.webSocketServer.on('request', (req) => {
             var connection = req.accept('echo-protocol', req.origin);
             this.emit('websocketConnection', connection, req);
         })
 
-        this.ftpServer.listen(3001);
+        if(this.config.server.ftp) this.ftpServer.listen(3001);
         this.httpServer.listen(3000, () => {
             console.log("Server is listening");
         })
