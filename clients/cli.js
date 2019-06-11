@@ -11,7 +11,8 @@ process.argv.shift(); process.argv.shift();
 const parsedArgs = {
     nickname: process.argv[0].split('@')[0],
     hostname: process.argv[0].split('@')[1],
-    verbose: process.argv.includes("-v")
+    verbose: process.argv.includes("-v"),
+    prefix: '/'
 }
 chat.verbose = parsedArgs.verbose;
 function parseDirectory(files) {
@@ -32,26 +33,26 @@ function openURL(url) {
     require('child_process').exec(start + ' ' + url);
 }
 function parseFTP(params) {
-    switch (params[0]) {
+    switch (params.shift()) {
         case 'upload':
-            ftpClient.upload(fs.createReadStream(params[1]), params[2]).then(res => {
+            ftpClient.upload(fs.createReadStream('localFTP/'+params[0]), params[1]).then(res => {
                 chat.debug(JSON.stringify(res));
-                chat.ftp(`${params[1]} Uploaded to ${params[2]}`)
+                chat.ftp(`${params[0]} Uploaded to ${params[1]}`)
             }).catch(res => {
                 chat.error(res);
             })
             break;
         case 'download':
-            ftpClient.download(fs.createWriteStream('localFTP/'+params[2]), params[1]).then(res => {
+            ftpClient.download(fs.createWriteStream('localFTP/'+params[1]), params[0]).then(res => {
                 chat.debug(JSON.stringify(res));
-                chat.ftp(`${params[1]} Downloaded to ${params[2]}`)
+                chat.ftp(`${params[0]} Downloaded to ${params[1]}`)
             }).catch(res => {
                 chat.error(res);
             })
             break;
 
         case 'list':
-            ftpClient.list().then(res => {
+            ftpClient.list((params[0]) ? params[0] : null).then(res => {
                 chat.debug(JSON.stringify(res));
                 chat.ftp(parseDirectory(res));
             }).catch(res => {
@@ -73,7 +74,6 @@ client.on('connect', (ws) => {
     let userPass;
     const reciever = new Reciever(ws, serverPass);
     const transmitter = new Transmitter(serverPass);
-    const messages = [];
 
     function getData(cb) {
         transmitter.send(ws, {
@@ -90,9 +90,9 @@ client.on('connect', (ws) => {
 
     function parseInput(input) {
         input = input.toString().trim();
-        let cmd = (input[0] == "/") ? input.split(' ')[0].substr(1) : false;
+        let cmd = (input[0] == parsedArgs.prefix) ? input.split(' ')[0].substr(1) : false;
         let params = (cmd) ? input.split(cmd)[1].split(' ') : [];      
-        params.shift()          
+        params.shift()
         console.log('\033[2A');
 
         if(!cmd) {
@@ -115,7 +115,32 @@ client.on('connect', (ws) => {
                 case 'ftp':
                     parseFTP(params);
                     break;
-            
+
+                case 'exit':
+                    chat.client("Exiting..");
+                    process.exit(1);
+                    break;
+
+                case 'help':
+                    chat.client(`
+                    Prefix: ${parsedArgs.prefix}
+
+                    General Commands:
+                        active-users: shows list of active users
+                        exit: exits client
+                        prefix [prefix]: sets client prefix (default: /)
+                        
+                    FTP Commands:
+                        ftp upload [localPath] [remotePath]: uploads file at localPath to remotePath at server
+                        ftp download [remotePath] [localPath]: downloads file from remotePath to localPath
+                        ftp open [remotePath]: opens file from remotePath in browser
+                        ftp list [path]: lists files at path or ~ if path is not provided
+                    `)
+                    break;
+                case 'prefix':
+                    parsedArgs.prefix = params[0];
+                    chat.client("Client prefix set");
+                    break;
                 default:
                     chat.error("Command not recognized");
                     break;
@@ -137,6 +162,9 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('loginRequest', (data) => {
+        console.log('\x1b[2J');
+        console.log(`Server: ${data.server.name}`);
+        console.log('==========================================');
         userPass = readlineSync.question("User password (leave blank for none): ") || " ";
         ftpClient.access({
             host: parsedArgs.hostname,
@@ -162,10 +190,6 @@ client.on('connect', (ws) => {
     });
 
     reciever.on('loginSuccessful', (data) => {
-        console.log('\x1b[2J');
-        if(data.password) {
-            console.log(`!!IMPORTANT!!\n Your password is ${data.password}, use it at your next login\n`);
-        }  
         transmitter.send(ws, {
             code: transmitter.codes.loginSuccessful,
             data: {
@@ -173,8 +197,6 @@ client.on('connect', (ws) => {
             }
         })
 
-        console.log(`Server: ${data.server.name}`);
-        console.log('==========================================');
         chat.debug(JSON.stringify(data));
         data.server.channels[0].messages.forEach(data => {
             chat.message({
@@ -184,10 +206,13 @@ client.on('connect', (ws) => {
                 content: data.content
             });
         });
+
+        if(data.password) {
+            chat.client(`Your password is ${data.password}, use it at your next login`);
+        }
     })
 
     reciever.on('dataMessage', (data) => { 
-        messages.push(data);
         chat.message({
             timestamp: data.createdAt,
             styling: data.user.role.styling,

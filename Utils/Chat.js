@@ -38,7 +38,8 @@ chat.ftp = (msg) => {
 }
 
 chat.message = (data) => {
-    let f = `<${new Date(data.timestamp).toLocaleTimeString()}> [${ANSI.StyleString(data.displayname, data.styling)}] ${data.content}\n`
+    let content = data.content.split('\n').join('\n=>');
+    let f = `<${new Date(data.timestamp).toLocaleTimeString()}> [${ANSI.StyleString(data.displayname, data.styling)}] ${content}\n`
     process.stdout.write(f);
 }
 module.exports = chat
