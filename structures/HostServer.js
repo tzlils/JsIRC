@@ -2,9 +2,8 @@ const EventEmitter = require('events'),
     Transmitter = require('./Transmitter'),
     Server = require('./Server'),
     Connection = require('./Connection'),
-    WebSocketServer = require('websocket').server,
-    http = require('http'),
     FtpSrv = require('ftp-srv'),
+    net = require('net');
     buyan = require('bunyan');
 
 module.exports = class HostServer extends EventEmitter {
@@ -21,15 +20,9 @@ module.exports = class HostServer extends EventEmitter {
     }
 
     start() {
-        this.httpServer = http.createServer((req, res) => {
-            res.writeHead(404);
-            res.end();
-        })
-
-        this.webSocketServer = new WebSocketServer({
-            httpServer: this.httpServer,
-            autoAcceptConnections: false
-        })
+        this.server = net.createServer((s) => {
+            this.emit('connection', s);
+        });
 
         this.ftpServer = new FtpSrv({
             log: buyan.createLogger({
@@ -79,13 +72,8 @@ module.exports = class HostServer extends EventEmitter {
 
         });
 
-        this.webSocketServer.on('request', (req) => {
-            var connection = req.accept('echo-protocol', req.origin);
-            this.emit('websocketConnection', connection, req);
-        })
-
         if(this.config.server.ftp) this.ftpServer.listen(3001);
-        this.httpServer.listen(3000, () => {
+        this.server.listen(3000, () => {
             console.log("Server is listening");
         })
     }
@@ -98,15 +86,15 @@ module.exports = class HostServer extends EventEmitter {
         return r;
     }
 
-    addConnection(websocket) {
-        let con = new Connection(websocket);
+    addConnection(socket) {
+        let con = new Connection(socket);
         if(this.isConnected(con.ip)) {
             //con.throwError(Error("Already connected"));
             //return;
         };
 
         this.activeConnections.add(con);
-        websocket.on('close', (data) => {
+        socket.on('close', (data) => {
             clearInterval(con.interval);
             this.activeConnections.delete(con)
             //this.chat.removeUser(con.user);

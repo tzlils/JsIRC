@@ -3,7 +3,7 @@
         "name": "Terradice's server",
         "serverPassword": "password",
         "passwordRequired": false,
-        "ftp": true,
+        "ftp": false,
         "ftpDir": "FTPFolder"
     },
     "banList": [

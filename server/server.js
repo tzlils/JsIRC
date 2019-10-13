@@ -34,18 +34,18 @@ process.stdin.on('data', (chunk) => {
     }
 })
 
-Server.on('websocketConnection', (ws, req) => {
-    Server.reciever = new Reciever(ws, config.server.serverPassword);
+Server.on('connection', (socket) => {
+    Server.reciever = new Reciever(socket, config.server.serverPassword);
     for (let i = 0; i < config.banList.length; i++) {
-        if(req.remoteAddress == config.banList[i]) {
-            ws.socket.end();
+        if(socket.remoteAddress == config.banList[i]) {
+            socket.end();
             return
         };
     }
     
 
-    const con = Server.addConnection(ws);
-    Server.transmitter.send(ws, {
+    const con = Server.addConnection(socket);
+    Server.transmitter.send(socket, {
         code: Server.transmitter.codes.connectionSuccessful,
         data: {
             
@@ -58,8 +58,8 @@ Server.on('websocketConnection', (ws, req) => {
     })
 
     Server.reciever.on('connectionSuccessful', (data) => {
-        con.ip = req.remoteAddress;
-        Server.transmitter.send(ws, {
+        con.ip = socket.remoteAddress;
+        Server.transmitter.send(socket, {
             code: Server.transmitter.codes.loginRequest,
             data: {
                 server: Server.chat.safe()
@@ -77,20 +77,20 @@ Server.on('websocketConnection', (ws, req) => {
                 if(Cryptography.compareHash(data.password, con.user.password)) {
                     con.channel = Server.chat.defaultChannel;
                     Server.chat.addUser(con.user);
-                    Server.transmitter.send(ws, {
+                    Server.transmitter.send(socket, {
                         code: Server.transmitter.codes.loginSuccessful,
                         data: {
                             server: Server.chat.safe()
                         }
                     })
                 } else {
-                    Server.transmitter.send(ws, {
+                    Server.transmitter.send(socket, {
                         code: Server.transmitter.codes.connectionRefused,
                         data: {
                             
                         }
                     })
-                    ws.close();
+                    socket.end();
                 }
             } else {
                 let pass = Cryptography.generatePassword();
@@ -98,7 +98,7 @@ Server.on('websocketConnection', (ws, req) => {
     
                 con.channel = Server.chat.defaultChannel;
         
-                Server.transmitter.send(ws, {
+                Server.transmitter.send(socket, {
                     code: Server.transmitter.codes.loginSuccessful,
                     data: {
                         server: Server.chat.safe(),
@@ -112,7 +112,7 @@ Server.on('websocketConnection', (ws, req) => {
 
             con.channel = Server.chat.defaultChannel;
     
-            Server.transmitter.send(ws, {
+            Server.transmitter.send(socket, {
                 code: Server.transmitter.codes.loginSuccessful,
                 data: {
                     server: Server.chat.safe()
@@ -130,9 +130,9 @@ Server.on('websocketConnection', (ws, req) => {
     })
     
     Server.reciever.on('connectionRefused', (data) => {
-        try {
-            Server.chat.activeUsers.delete(con.user);
-        } catch(e){}
+        console.log(Server.chat.activeUsers);
+        Server.chat.activeUsers.delete(con.user);
+        console.log(Server.chat.activeUsers);
         try{sendMessage(`${con.user.name} has left`, Server.chat.systemUser)}catch(e){}
     })
 
@@ -146,7 +146,7 @@ Server.on('websocketConnection', (ws, req) => {
     })
 
     Server.reciever.on('requestData', (data) => {
-        Server.transmitter.send(ws, {
+        Server.transmitter.send(socket, {
             code: Server.transmitter.codes.dataInfo,
             data: Server.chat.safe()
         })
