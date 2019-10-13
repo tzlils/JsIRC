@@ -1,7 +1,7 @@
 module.exports = class Connection {
-    constructor(websocket) {
-        this.ip = websocket.remoteAddress;
-        this.websocket = websocket;
+    constructor(socket) {
+        this.ip = socket.remoteAddress;
+        this.socket = socket;
         this.channel;
         this.user;
         this.requests = 0;

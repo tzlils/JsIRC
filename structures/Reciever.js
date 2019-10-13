@@ -1,7 +1,7 @@
 const EventEmitter = require('events'),
     Cryptography = require('../Utils/Cryptography');
 module.exports = class Reciever extends EventEmitter {
-    constructor(websocket, decryptionKey) {
+    constructor(socket, decryptionKey) {
         super();
         this.codes = {
             '01': 'connectionSuccessful',
@@ -18,13 +18,15 @@ module.exports = class Reciever extends EventEmitter {
             '12': 'requestData'
         }
         this.decryption = decryptionKey;
+
+        socket.setEncoding('utf8');
         
-        websocket.on('message', (data) => {
-            this.parse(data.utf8Data, websocket);
+        socket.on('data', (data) => {
+            this.parse(data, socket);
         });
         
-        websocket.on('close', () => {     
-            this.parse(`02 {}`, websocket)
+        socket.on('end', () => {     
+            this.parse(`02 {}`, socket)
         })
     }
 

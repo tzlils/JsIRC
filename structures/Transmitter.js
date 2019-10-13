@@ -18,16 +18,16 @@ module.exports = class Transmitter {
         this.encryption = encryptionKey;
     }
 
-    send(websocket, content) {
+    send(socket, content) {
         let encrypted = Cryptography.encrypt(this.encryption, JSON.stringify(content.data))
         let format = `${content.code} ${encrypted}`;
-        websocket.sendUTF(format);
+        socket.write(format)
     }
 
     sendAllConnections(connections, content) {
         connections.forEach(connection => {
             
-            this.send(connection.websocket, content)
+            this.send(connection.socket, content)
         });
     }
 }

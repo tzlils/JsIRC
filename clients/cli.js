@@ -1,5 +1,5 @@
 #!/usr/bin/node
-const WebSocketClient = require('websocket').client,
+const net = require('net'),
     Reciever = require('../structures/Reciever'),
     Transmitter = require('../structures/Transmitter'),
     chat = require('../Utils/Chat'),
@@ -24,14 +24,13 @@ function parseDirectory(files) {
 }
 
 if(!parsedArgs.hostname || !parsedArgs.nickname) throw new Error('Hostname or Nickname not supplied')
-
-const client = new WebSocketClient();
 const ftpClient = new FTP.Client();
 
 function openURL(url) {
     var start = (process.platform == 'darwin'? 'open': process.platform == 'win32'? 'start': 'xdg-open');
     require('child_process').exec(start + ' ' + url);
 }
+
 function parseFTP(params) {
     switch (params.shift()) {
         case 'upload':
@@ -69,14 +68,57 @@ function parseFTP(params) {
     }
 }
 
-client.on('connect', (ws) => {
+function parseCMD(cmd) {
+    switch (cmd) {
+        case 'active-users':
+            getData((data) => {
+                chat.client(`Active users: ${data.activeUsers.map(r => r.name).join(',')}`);
+            })
+            break;
+        case 'ftp':
+            parseFTP(params);
+            break;
+
+        case 'exit':
+            chat.client("Exiting..");
+            process.exit(1);
+            break;
+
+        case 'help':
+            chat.client(`
+            Prefix: ${parsedArgs.prefix}
+
+            General Commands:
+                active-users: shows list of active users
+                exit: exits client
+                prefix [prefix]: sets client prefix (default: /)
+                
+            FTP Commands:
+                ftp upload [localPath] [remotePath]: uploads file at localPath to remotePath at server
+                ftp download [remotePath] [localPath]: downloads file from remotePath to localPath
+                ftp open [remotePath]: opens file from remotePath in browser
+                ftp list [path]: lists files at path or ~ if path is not provided
+            `)
+            break;
+        case 'prefix':
+            parsedArgs.prefix = params[0];
+            chat.client("Client prefix set");
+            break;
+        default:
+            chat.error("Command not recognized");
+            break;
+    }
+}
+
+
+const socket = net.createConnection(3000, parsedArgs.hostname, () => {
     let serverPass = readlineSync.question("Server password (leave blank for none): ");
     let userPass;
-    const reciever = new Reciever(ws, serverPass);
+    const reciever = new Reciever(socket, serverPass);
     const transmitter = new Transmitter(serverPass);
 
     function getData(cb) {
-        transmitter.send(ws, {
+        transmitter.send(socket, {
             code: transmitter.codes.requestData,
             data: {
                 
@@ -98,7 +140,7 @@ client.on('connect', (ws) => {
         if(!cmd) {
             if(input.length < 1) return
 
-            transmitter.send(ws, {
+            transmitter.send(socket, {
                 code: transmitter.codes.dataMessage,
                 data: {
                     content: input,
@@ -106,45 +148,7 @@ client.on('connect', (ws) => {
                 }
             })         
         } else {
-            switch (cmd) {
-                case 'active-users':
-                    getData((data) => {
-                        chat.client(`Active users: ${data.activeUsers.map(r => r.name).join(',')}`);
-                    })
-                    break;
-                case 'ftp':
-                    parseFTP(params);
-                    break;
-
-                case 'exit':
-                    chat.client("Exiting..");
-                    process.exit(1);
-                    break;
-
-                case 'help':
-                    chat.client(`
-                    Prefix: ${parsedArgs.prefix}
-
-                    General Commands:
-                        active-users: shows list of active users
-                        exit: exits client
-                        prefix [prefix]: sets client prefix (default: /)
-                        
-                    FTP Commands:
-                        ftp upload [localPath] [remotePath]: uploads file at localPath to remotePath at server
-                        ftp download [remotePath] [localPath]: downloads file from remotePath to localPath
-                        ftp open [remotePath]: opens file from remotePath in browser
-                        ftp list [path]: lists files at path or ~ if path is not provided
-                    `)
-                    break;
-                case 'prefix':
-                    parsedArgs.prefix = params[0];
-                    chat.client("Client prefix set");
-                    break;
-                default:
-                    chat.error("Command not recognized");
-                    break;
-            }
+            parseCMD(cmd);
         }
     }
 
@@ -153,7 +157,7 @@ client.on('connect', (ws) => {
     })
 
     reciever.on('connectionSuccessful', (data) => {
-        transmitter.send(ws, {
+        transmitter.send(socket, {
             code: transmitter.codes.connectionSuccessful,
             data: {
                 
@@ -179,7 +183,7 @@ client.on('connect', (ws) => {
             chat.debug(res);
         })
 
-        transmitter.send(ws, {
+        transmitter.send(socket, {
             code: transmitter.codes.loginRequest,
             data: {
                 nickname: parsedArgs.nickname,
@@ -190,7 +194,7 @@ client.on('connect', (ws) => {
     });
 
     reciever.on('loginSuccessful', (data) => {
-        transmitter.send(ws, {
+        transmitter.send(socket, {
             code: transmitter.codes.loginSuccessful,
             data: {
 
@@ -223,15 +227,14 @@ client.on('connect', (ws) => {
 
     process.stdin.on('data',  parseInput)
 
-    ws.on('error', (err) => {
+    socket.on('error', (err) => {
         chat.error("Connection error: " + err);
         process.exit(1);
     });
 
-    ws.on('close', () => {
-        chat.error(`Connection to ${ws.remoteAddress} abruptly ended`);
+    socket.on('end', () => {
+        chat.error(`Connection to ${socket.remoteAddress} abruptly ended`);
         process.exit(1);
     });
-})
+});
 
-client.connect(`ws://${parsedArgs.hostname}:3000/`, 'echo-protocol');
